@@ -47,7 +47,7 @@ export default function FeesPage() {
 
     const sendWhatsAppReminder = (student: Student) => {
         const due = formatCurrency(student.totalFee - student.paidFee)
-        const msg = `Dear Parent, This is a gentle reminder that ${student.fullName}'s fee of ${due} is pending at our coaching institute. Please arrange payment at your earliest convenience. Thank you!`
+        const msg = `Dear Parent, This is a gentle reminder that ${student.fullName}'s fee of ${due} is pending at our school. Please arrange payment at your earliest convenience. Thank you!`
         window.open(`https://wa.me/91${(student.parentPhone || student.phone).replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank')
     }
 

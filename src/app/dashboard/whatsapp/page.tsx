@@ -7,28 +7,28 @@ const TEMPLATES = [
     {
         id: 'fee_reminder',
         name: '💰 Fee Reminder',
-        message: 'Dear {parent_name}, This is a reminder that {student_name}\'s fee of ₹{amount} is due on {due_date}. Please contact us to arrange payment. - {coaching_name}',
+        message: 'Dear {parent_name}, This is a reminder that {student_name}\'s fee of ₹{amount} is due on {due_date}. Please contact us to arrange payment. - {school_name}',
         type: 'Fee',
         color: '#f59e0b',
     },
     {
         id: 'admission_welcome',
         name: '🎉 Admission Welcome',
-        message: 'Dear {student_name}, Welcome to {coaching_name}! Your admission is confirmed for {course_name}. Classes start from {start_date}. We look forward to your bright future! 🌟',
+        message: 'Dear {student_name}, Welcome to {school_name}! Your admission is confirmed for {course_name}. Classes start from {start_date}. We look forward to your bright future! 🌟',
         type: 'Admission',
         color: '#10b981',
     },
     {
         id: 'absent_alert',
         name: '⚠️ Absence Alert',
-        message: 'Dear Parent, {student_name} was absent from today\'s class on {date}. If this was unplanned, please inform us. Consistent attendance is key to success. - {coaching_name}',
+        message: 'Dear Parent, {student_name} was absent from today\'s class on {date}. If this was unplanned, please inform us. Consistent attendance is key to success. - {school_name}',
         type: 'Attendance',
         color: '#ef4444',
     },
     {
         id: 'exam_reminder',
         name: '📝 Exam Reminder',
-        message: 'Dear {student_name}, Reminder: Your mock test "{test_name}" is scheduled for {date} at {time}. Total marks: {marks}. Best of luck! - {coaching_name}',
+        message: 'Dear {student_name}, Reminder: Your mock test "{test_name}" is scheduled for {date} at {time}. Total marks: {marks}. Best of luck! - {school_name}',
         type: 'Exam',
         color: '#6366f1',
     },
@@ -42,7 +42,7 @@ const TEMPLATES = [
     {
         id: 'holiday',
         name: '🎊 Holiday Notice',
-        message: 'Dear Students & Parents, Please note that our institute will remain closed on {date} for {reason}. Classes will resume normally from {resume_date}. - {coaching_name}',
+        message: 'Dear Students & Parents, Please note that our institute will remain closed on {date} for {reason}. Classes will resume normally from {resume_date}. - {school_name}',
         type: 'General',
         color: '#06b6d4',
     },
@@ -57,7 +57,7 @@ export default function WhatsAppPage() {
 
     const sendDemo = (template: typeof TEMPLATES[0]) => {
         const msg = template.message
-            .replace('{coaching_name}', tenant?.name || 'School Name')
+            .replace('{school_name}', tenant?.name || 'School Name')
             .replace('{student_name}', '[Student Name]')
             .replace('{parent_name}', '[Parent Name]')
             .replace('{amount}', '[Amount]')

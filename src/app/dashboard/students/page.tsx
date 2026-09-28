@@ -353,7 +353,7 @@ export default function StudentsPage() {
                                 {canEditOrDelete && (
                                     <button onClick={() => { setEditForm(selectedStudent); setIsEditing(true); }} className="btn btn-secondary">✏️ Edit Details</button>
                                 )}
-                                <a href={`https://wa.me/${(selectedStudent.parentPhone || selectedStudent.phone)?.replace(/\D/g, '')}?text=Dear Parent, This is regarding ${selectedStudent.fullName} from our coaching institute.`} target="_blank" className="btn btn-success">💬 WhatsApp Parent</a>
+                                <a href={`https://wa.me/${(selectedStudent.parentPhone || selectedStudent.phone)?.replace(/\D/g, '')}?text=Dear Parent, This is regarding ${selectedStudent.fullName} from our school.`} target="_blank" className="btn btn-success">💬 WhatsApp Parent</a>
                                 <button onClick={() => setSelectedStudent(null)} className="btn btn-secondary">Close</button>
                             </div>
                         )}

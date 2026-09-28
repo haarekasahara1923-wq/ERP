@@ -24,7 +24,7 @@ export default function ProfilePage() {
         <div>
             <div className="page-header">
                 <div>
-                    <h1 className="page-title">🏢 Coaching Profile</h1>
+                    <h1 className="page-title">🏢 School Profile</h1>
                     <p className="page-subtitle">Manage your institute details and branding</p>
                 </div>
             </div>
@@ -37,7 +37,7 @@ export default function ProfilePage() {
                         <h3 style={{ fontWeight: '700', marginBottom: '20px', fontSize: '16px', color: 'var(--primary-light)' }}>🏫 Institute Details</h3>
                         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                             <div>
-                                <label className="label">Coaching Name</label>
+                                <label className="label">School Name</label>
                                 <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
                             </div>
                             <div>
@@ -72,7 +72,7 @@ export default function ProfilePage() {
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
                                 <div style={{ width: '48px', height: '48px', background: `linear-gradient(135deg, ${form.themeColor}, ${form.themeColor}88)`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>🎓</div>
                                 <div>
-                                    <div style={{ fontWeight: '800', fontSize: '16px', color: 'white' }}>{form.name || 'Your Coaching Name'}</div>
+                                    <div style={{ fontWeight: '800', fontSize: '16px', color: 'white' }}>{form.name || 'Your School Name'}</div>
                                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{form.phone}</div>
                                 </div>
                             </div>

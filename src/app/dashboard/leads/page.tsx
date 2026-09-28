@@ -150,7 +150,7 @@ export default function LeadsPage() {
                                                         style={{ padding: '4px 8px', background: 'var(--surface-2)', border: '1px solid var(--border)', borderRadius: '6px', color: 'var(--text-primary)', fontSize: '11px', cursor: 'pointer' }}>
                                                         {Object.entries(statusConfig).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                                                     </select>
-                                                    <a href={`https://wa.me/91${lead.phone}?text=Hello ${lead.name}, We have a great coaching program for you!`} target="_blank"
+                                                    <a href={`https://wa.me/91${lead.phone}?text=Hello ${lead.name}, We have a great program for you at our school!`} target="_blank"
                                                         style={{ padding: '4px 8px', background: '#25d36620', border: '1px solid #25d36640', borderRadius: '6px', color: '#25d366', fontSize: '11px', textDecoration: 'none', fontWeight: '700' }}>
                                                         💬 WA
                                                     </a>

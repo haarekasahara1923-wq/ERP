@@ -124,7 +124,7 @@ export default function TeachersPage() {
                                 <div><label className="label">Full Name *</label><input className="input" placeholder="Dr. Rajesh Kumar" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
                                 <div className="grid-cols-2">
                                     <div><label className="label">Phone *</label><input className="input" type="tel" placeholder="917879337770" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} required /></div>
-                                    <div><label className="label">Email</label><input className="input" type="email" placeholder="teacher@coaching.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
+                                    <div><label className="label">Email</label><input className="input" type="email" placeholder="teacher@school.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} /></div>
                                 </div>
                                 <div><label className="label">Subjects (comma separated)</label><input className="input" placeholder="Physics, Maths" value={form.subject} onChange={e => setForm({ ...form, subject: e.target.value })} /></div>
                                 <div className="grid-cols-2">
