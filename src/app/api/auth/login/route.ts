@@ -97,6 +97,7 @@ export async function POST(req: NextRequest) {
                 phone: tenant.phone,
                 address: tenant.address,
                 email: tenant.email,
+                schoolCode: tenant.schoolCode,
             } : null,
             subscription: subscription || null,
         })

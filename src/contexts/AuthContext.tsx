@@ -20,6 +20,7 @@ interface Tenant {
     phone?: string
     email?: string
     address?: string
+    schoolCode?: string
 }
 
 interface Subscription {
