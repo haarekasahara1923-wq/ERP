@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, signAccessToken, signRefreshToken } from '@/lib/auth'
 
@@ -8,7 +8,7 @@ const ADMIN_ONLY_ROLES = ['ADMIN_OPERATION', 'ADMIN_LIBRARY', 'ADMIN_SPORTS', 'A
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json()
-        const { name, email, password, phone, role, tenantId } = body
+        const { name, email, password, phone, role, tenantId, schoolCode } = body
 
         if (!name || !email || !password) {
             return NextResponse.json({ error: 'Name, email/phone, and password are required' }, { status: 400 })
@@ -16,17 +16,15 @@ export async function POST(req: NextRequest) {
 
         const userRole = role || 'STUDENT'
 
-        // Block sub-admin self-registration — only super admin can create those
+        // Block sub-admin self-registration
         if (ADMIN_ONLY_ROLES.includes(userRole)) {
             return NextResponse.json({ error: 'Admin accounts are created by the Super Admin. Please contact your school administration.' }, { status: 403 })
         }
 
-        // Determine email / phone from identifier
         const isRealEmail = email.includes('@') && !email.includes('@udba.local')
         const resolvedEmail = isRealEmail ? email.toLowerCase() : `${phone || email}@udba.local`
         const resolvedPhone = phone || (isRealEmail ? undefined : email)
 
-        // Check if user already exists
         const existingUser = await prisma.user.findFirst({
             where: {
                 OR: [
@@ -41,17 +39,22 @@ export async function POST(req: NextRequest) {
 
         const hashedPassword = await hashPassword(password)
 
-        // In multitenant mode, we need a tenantId
-        // For school-registered users (SUPER_ADMIN through school-signup), they already have a tenant
-        // For other registrations (students, teachers etc.) they need to be invited by their school admin
-        let targetTenantId = tenantId
         let school = null
 
-        if (targetTenantId) {
-            school = await prisma.tenant.findUnique({ where: { id: targetTenantId } })
+        // 1. Try schoolCode first (new preferred method)
+        if (schoolCode) {
+            school = await prisma.tenant.findUnique({ where: { schoolCode: schoolCode.trim().toUpperCase() } })
+            if (!school) {
+                return NextResponse.json({ error: 'Invalid School ID. Please check the School ID provided by your school administration.' }, { status: 404 })
+            }
         }
 
-        // Legacy single-school support (env var)
+        // 2. Try tenantId
+        if (!school && tenantId) {
+            school = await prisma.tenant.findUnique({ where: { id: tenantId } })
+        }
+
+        // 3. Legacy single-school support (env var)
         if (!school) {
             const schoolSlug = process.env.NEXT_PUBLIC_SCHOOL_SLUG
             if (schoolSlug) {
@@ -59,13 +62,17 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // Fallback to first available school if none specified
+        // 4. Fallback to first available school
         if (!school) {
             school = await prisma.tenant.findFirst()
         }
 
         if (!school) {
             return NextResponse.json({ error: 'School configuration not found. Please contact administration.' }, { status: 404 })
+        }
+
+        if (!school.isActive) {
+            return NextResponse.json({ error: 'This school account is currently inactive. Please contact administration.' }, { status: 403 })
         }
 
         const resolvedTenantId = school.id
@@ -164,7 +171,7 @@ export async function POST(req: NextRequest) {
             accessToken,
             refreshToken,
             user: { id: result.user.id, name, email: resolvedEmail, role: userRole, tenantId: resolvedTenantId, studentId: result.studentId || null },
-            tenant: { id: school.id, name: school.name, themeColor: school.themeColor },
+            tenant: { id: school.id, name: school.name, themeColor: school.themeColor, schoolCode: school.schoolCode },
         }, { status: 201 })
     } catch (error) {
         console.error('Register error:', error)

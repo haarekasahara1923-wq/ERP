@@ -1,8 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { hashPassword, signAccessToken, signRefreshToken } from '@/lib/auth'
 
-// Generate a URL-friendly slug from school name
 function generateSlug(name: string): string {
     return name
         .toLowerCase()
@@ -12,70 +11,63 @@ function generateSlug(name: string): string {
         .slice(0, 50)
 }
 
+async function generateUniqueSchoolCode(): Promise<string> {
+    const year = new Date().getFullYear()
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
+    let code = ''
+    let exists = false
+    do {
+        const rand = Array.from({ length: 4 }, () => chars[Math.floor(Math.random() * chars.length)]).join('')
+        code = 'SCL-' + year + '-' + rand
+        exists = !!(await prisma.tenant.findUnique({ where: { schoolCode: code } }))
+    } while (exists)
+    return code
+}
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json()
-        const {
-            // School info
-            schoolName,
-            schoolAddress,
-            schoolPhone,
-            schoolEmail,
-            // Director/Super Admin info
-            directorName,
-            directorPhone,
-            directorEmail,
-            // Auth
-            email,
-            password,
-        } = body
+        const { schoolName, schoolAddress, schoolPhone, schoolEmail, directorName, directorPhone, directorEmail, email, password } = body
 
         if (!schoolName || !directorName || !email || !password) {
-            return NextResponse.json({
-                error: 'School name, director name, email and password are required'
-            }, { status: 400 })
+            return NextResponse.json({ error: 'School name, director name, email and password are required' }, { status: 400 })
         }
 
         if (password.length < 6) {
             return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
         }
 
-        // Check if email already in use
-        const existingUser = await prisma.user.findFirst({
-            where: { email: email.toLowerCase() }
-        })
+        const existingUser = await prisma.user.findFirst({ where: { email: email.toLowerCase() } })
         if (existingUser) {
             return NextResponse.json({ error: 'An account with this email already exists' }, { status: 409 })
         }
 
-        // Generate unique slug
         let baseSlug = generateSlug(schoolName)
         let slug = baseSlug
         let count = 1
         while (await prisma.tenant.findUnique({ where: { slug } })) {
-            slug = `${baseSlug}-${count++}`
+            slug = baseSlug + '-' + (count++)
         }
 
+        const schoolCode = await generateUniqueSchoolCode()
         const hashedPassword = await hashPassword(password)
 
         const result = await prisma.$transaction(async (tx) => {
-            // 1. Create the tenant (school)
             const tenant = await tx.tenant.create({
                 data: {
                     name: schoolName,
                     slug,
+                    schoolCode,
                     address: schoolAddress || null,
                     phone: schoolPhone || null,
                     email: schoolEmail || null,
                     isActive: true,
-                    // Director info captured at signup
                     directorName,
                     directorPhone: directorPhone || null,
                     directorEmail: directorEmail || email,
                 }
             })
 
-            // 2. Create the SUPER_ADMIN user
             const user = await tx.user.create({
                 data: {
                     tenantId: tenant.id,
@@ -89,9 +81,8 @@ export async function POST(req: NextRequest) {
                 }
             })
 
-            // 3. Create a trial subscription
             const trialEnd = new Date()
-            trialEnd.setDate(trialEnd.getDate() + 30) // 30 day trial
+            trialEnd.setDate(trialEnd.getDate() + 30)
 
             await tx.subscription.create({
                 data: {
@@ -131,6 +122,7 @@ export async function POST(req: NextRequest) {
                 id: result.tenant.id,
                 name: result.tenant.name,
                 slug: result.tenant.slug,
+                schoolCode: result.tenant.schoolCode,
                 themeColor: result.tenant.themeColor,
             }
         }, { status: 201 })

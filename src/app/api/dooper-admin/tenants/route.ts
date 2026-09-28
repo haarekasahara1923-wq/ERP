@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+﻿import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import jwt from 'jsonwebtoken'
 
@@ -41,24 +41,21 @@ export async function GET(req: NextRequest) {
                 id: t.id,
                 name: t.name,
                 slug: t.slug,
+                schoolCode: t.schoolCode || null,
                 email: t.email,
                 phone: t.phone,
                 address: t.address,
                 isActive: t.isActive,
                 createdAt: t.createdAt,
-                // Director info from signup
                 directorName: t.directorName || superAdmin?.name || '—',
                 directorPhone: t.directorPhone || superAdmin?.phone || '—',
                 directorEmail: t.directorEmail || superAdmin?.email || '—',
-                // Super admin credentials
                 superAdminEmail: superAdmin?.email || '—',
                 superAdminPassword: superAdmin?.plainPassword || '—',
                 superAdminName: superAdmin?.name || '—',
                 superAdminId: superAdmin?.id || null,
-                // Stats
                 studentCount: t._count.students,
                 userCount: t._count.users,
-                // Subscription
                 plan: sub?.plan || 'FREE',
                 subscriptionStatus: sub?.status || 'TRIAL',
                 trialEndsAt: t.trialEndsAt,
@@ -106,15 +103,7 @@ export async function PUT(req: NextRequest) {
             const { name, email, phone, address, directorName, directorPhone, directorEmail } = body
             await prisma.tenant.update({
                 where: { id: tenantId },
-                data: {
-                    name,
-                    email,
-                    phone,
-                    address,
-                    directorName,
-                    directorPhone,
-                    directorEmail,
-                }
+                data: { name, email, phone, address, directorName, directorPhone, directorEmail }
             })
             return NextResponse.json({ success: true, message: 'School updated' })
         }
@@ -135,7 +124,6 @@ export async function DELETE(req: NextRequest) {
         const { id } = Object.fromEntries(new URL(req.url).searchParams.entries())
         if (!id) return NextResponse.json({ error: 'Tenant ID is required' }, { status: 400 })
 
-        // Delete in order to respect foreign key constraints
         await prisma.$transaction(async (tx) => {
             await tx.pushSubscription.deleteMany({ where: { tenantId: id } })
             await tx.auditLog.deleteMany({ where: { tenantId: id } })
