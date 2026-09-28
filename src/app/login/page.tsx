@@ -188,8 +188,8 @@ function LoginForm() {
 
         <div style={{ textAlign: 'center', marginTop: '14px' }}>
           <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.4)' }}>
-            New school?{' '}
-            <Link href="/school-signup" style={{ color: '#a78bfa', fontWeight: '700', textDecoration: 'none' }}>Register free →</Link>
+            Don't have an account?{' '}
+            <Link href="/register" style={{ color: '#a78bfa', fontWeight: '700', textDecoration: 'none' }}>Register here →</Link>
           </p>
         </div>
 
