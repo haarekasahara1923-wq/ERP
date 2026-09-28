@@ -8,77 +8,9 @@ function getUser(req: NextRequest) {
     return verifyAccessToken(authHeader.split(' ')[1])
 }
 
-// GET - Fetch all tenants with subscriptions, students count, earnings
+// GET - Fetch all tenants
 export async function GET(req: NextRequest) {
-    try {
-        const user = getUser(req)
-        if (!user || user.role !== 'SUPER_ADMIN') {
-            return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
-        }
-
-        const tenants = await prisma.tenant.findMany({
-            include: {
-                subscriptions: true,
-                users: {
-                    where: { role: 'COACHING_ADMIN' },
-                    select: { email: true, plainPassword: true }
-                },
-                _count: { select: { students: true, users: true } }
-            },
-            orderBy: { createdAt: 'desc' }
-        })
-
-        const orders = await prisma.gyankoshOrder.findMany({
-            where: { status: 'SUCCESS' },
-            select: { amount: true, commissionAmount: true, affiliateTenantId: true }
-        })
-
-        const totalGyankoshRevenue = orders.reduce((s, o) => s + o.amount, 0)
-        const totalCommissionPaid = orders.reduce((s, o) => s + o.commissionAmount, 0)
-
-        const formatted = tenants.map(t => {
-            const sub = t.subscriptions[0]
-            const tenantOrders = orders.filter(o => o.affiliateTenantId === t.id)
-            const affiliateEarnings = tenantOrders.reduce((s, o) => s + o.commissionAmount, 0)
-            return {
-                id: t.id,
-                name: t.name,
-                slug: t.slug,
-                email: t.email,
-                phone: t.phone,
-                address: t.address,
-                isActive: t.isActive,
-                plan: sub?.plan || 'BASIC',
-                subscriptionStatus: sub?.status || 'TRIAL',
-                amount: sub?.amount || 0,
-                trialEndsAt: t.trialEndsAt,
-                studentCount: t._count.students,
-                userCount: t._count.users,
-                totalEarnings: t.totalEarnings,
-                availableBalance: t.availableBalance,
-                affiliateEarnings,
-                upiId: t.upiId,
-                bankAccountNo: t.bankAccountNo,
-                ifscCode: t.ifscCode,
-                adminPassword: t.users[0]?.plainPassword || '—',
-                createdAt: t.createdAt,
-            }
-        })
-
-        return NextResponse.json({
-            tenants: formatted,
-            stats: {
-                totalTenants: tenants.length,
-                activeTenants: tenants.filter(t => t.isActive).length,
-                totalStudents: tenants.reduce((s, t) => s + t._count.students, 0),
-                totalGyankoshRevenue,
-                totalCommissionPaid,
-            }
-        })
-    } catch (error) {
-        console.error('Super admin tenants error:', error)
-        return NextResponse.json({ error: 'Failed' }, { status: 500 })
-    }
+    return NextResponse.json({ error: 'Forbidden. Use Dooper Admin Panel for platform management.' }, { status: 403 })
 }
 
 // PUT - Block/Unblock tenant or Mark subscription as paid

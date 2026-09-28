@@ -53,17 +53,6 @@ const navItems = [
     },
 ]
 
-const superAdminNav = [
-    {
-        group: 'SUPER ADMIN', items: [
-            { href: '/dashboard/super-admin', icon: '👑', label: 'Platform Overview' },
-            { href: '/dashboard/super-admin/tenants', icon: '🏗️', label: 'Schools' },
-            { href: '/dashboard/super-admin/manage-admins', icon: '👥', label: 'Manage Admins' },
-            { href: '/dashboard/super-admin/subscriptions', icon: '💎', label: 'System Config' },
-        ]
-    },
-]
-
 // Navigation items allowed for sub-admin roles
 const adminOperationNav = [
     {
@@ -113,7 +102,14 @@ const adminTransportNav = [
 ]
 
 const getNavForRole = (role: string) => {
-    if (role === 'SUPER_ADMIN') return [...superAdminNav, ...adminOperationNav]
+    if (role === 'SUPER_ADMIN' || role === 'COACHING_ADMIN') {
+        const nav = JSON.parse(JSON.stringify(navItems))
+        const mgmtGroup = nav.find((g: any) => g.group === 'MANAGEMENT')
+        if (mgmtGroup) {
+            mgmtGroup.items.push({ href: '/dashboard/super-admin/manage-admins', icon: '👥', label: 'Manage Admins' })
+        }
+        return nav
+    }
     if (role === 'ADMIN_OPERATION') return adminOperationNav
     if (role === 'ADMIN_LIBRARY') return adminLibraryNav
     if (role === 'ADMIN_SPORTS') return adminSportsNav
