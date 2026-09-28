@@ -8,7 +8,6 @@ function PortalShell({ children }: { children: React.ReactNode }) {
   const { user, tenant, isLoading, logout, token } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
-  const [qrModalOpen, setQrModalOpen] = useState(false)
 
   useEffect(() => {
     if (!isLoading && !user) router.push('/login')
@@ -113,20 +112,7 @@ function PortalShell({ children }: { children: React.ReactNode }) {
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ position: 'relative' }}>
-            <button onClick={() => setQrModalOpen(!qrModalOpen)} style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '20px' }}>📱</button>
-            {qrModalOpen && (
-              <div style={{
-                position: 'absolute', top: '30px', right: 0, width: '200px',
-                background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column',
-                alignItems: 'center', gap: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.7)', zIndex: 200
-              }}>
-                <div style={{ color: 'white', fontSize: '14px', fontWeight: 'bold', textAlign: 'center' }}>Download App</div>
-                <img src="/downloads/UDBA-app-qrcode.png" alt="QR Code" style={{ width: '120px', height: '120px', borderRadius: '8px', background: 'white', padding: '6px' }} />
-                <a href="/downloads/UDBA-app-qrcode.png" download="UDBA-app-qrcode.png" style={{ background: '#6366f1', color: 'white', textDecoration: 'none', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', fontWeight: 'bold', width: '100%', textAlign: 'center', border: 'none' }}>⬇️ Download QR</a>
-              </div>
-            )}
-          </div>
+
           <button onClick={logout} style={{ background: 'rgba(239,68,68,0.15)', border: '1px solid rgba(239,68,68,0.3)', color: '#ef4444', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', cursor: 'pointer' }}>Logout</button>
         </div>
       </header>

@@ -7,7 +7,6 @@ import Link from 'next/link'
 export default function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
   const [cartCount, setCartCount] = useState(0)
-  const [qrModalOpen, setQrModalOpen] = useState(false)
 
   const updateCartCount = () => {
     try {
@@ -57,30 +56,7 @@ export default function Navbar() {
           )}
         </Link>
 
-        <div style={{ position: 'relative' }}>
-          <button onClick={() => setQrModalOpen(!qrModalOpen)} style={{ background: 'none', border: 'none', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px' }}>
-            <Smartphone size={22} />
-          </button>
-          {qrModalOpen && (
-            <div style={{
-              position: 'absolute', top: '40px', right: '-80px', width: '220px',
-              background: 'rgba(15,15,26,0.95)', border: '1px solid var(--border)', backdropFilter: 'blur(10px)',
-              borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.7)', zIndex: 200
-            }}>
-              <div style={{ color: 'white', fontSize: '14px', fontWeight: 'bold' }}>Download Android App</div>
-              <img src="/downloads/UDBA-app-qrcode.png" alt="App QR Code" style={{ width: '150px', height: '150px', borderRadius: '8px', background: 'white', padding: '8px' }} />
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', textAlign: 'center' }}>Scan to install on Android</div>
-              <a href="/downloads/UDBA-app-qrcode.png" download="UDBA-app-qrcode.png" style={{ 
-                background: 'linear-gradient(135deg, #6366f1, #ec4899)', color: 'white', textDecoration: 'none',
-                padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold',
-                width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: 'none'
-              }}>
-                <Download size={14} /> Download QR Code
-              </a>
-            </div>
-          )}
-        </div>
+
 
         <div className="hide-mobile" style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
           <Link href="/login" style={{ color: 'white', textDecoration: 'none', fontSize: '14px', fontWeight: '600' }}>Login</Link>

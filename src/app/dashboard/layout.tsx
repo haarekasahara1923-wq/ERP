@@ -187,7 +187,6 @@ function DashboardHeader({ onMenuClick }: { onMenuClick: () => void }) {
     const pathname = usePathname()
     const { tenant } = useAuth()
     const [aiModalOpen, setAiModalOpen] = useState(false)
-    const [qrModalOpen, setQrModalOpen] = useState(false)
 
     const getPageTitle = () => {
         const map: Record<string, string> = {
@@ -267,30 +266,7 @@ function DashboardHeader({ onMenuClick }: { onMenuClick: () => void }) {
                     Live
                 </div>
 
-                <div style={{ position: 'relative' }}>
-                    <button onClick={() => setQrModalOpen(!qrModalOpen)} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', display: 'flex', alignItems: 'center', padding: '4px', fontSize: '20px' }}>
-                        📱
-                    </button>
-                    {qrModalOpen && (
-                        <div style={{
-                            position: 'absolute', top: '40px', right: '-80px', width: '220px',
-                            background: 'var(--surface)', border: '1px solid var(--border)',
-                            borderRadius: '12px', padding: '16px', display: 'flex', flexDirection: 'column',
-                            alignItems: 'center', gap: '12px', boxShadow: '0 10px 40px rgba(0,0,0,0.7)', zIndex: 200
-                        }}>
-                            <div style={{ color: 'var(--text-primary)', fontSize: '14px', fontWeight: 'bold' }}>Download Android App</div>
-                            <img src="/downloads/UDBA-app-qrcode.png" alt="App QR Code" style={{ width: '150px', height: '150px', borderRadius: '8px', background: 'white', padding: '8px' }} />
-                            <div style={{ fontSize: '11px', color: 'var(--text-muted)', textAlign: 'center' }}>Scan to install on Android</div>
-                            <a href="/downloads/UDBA-app-qrcode.png" download="UDBA-app-qrcode.png" style={{ 
-                                background: 'linear-gradient(135deg, #6366f1, #ec4899)', color: 'white', textDecoration: 'none',
-                                padding: '8px 16px', borderRadius: '6px', fontSize: '13px', fontWeight: 'bold',
-                                width: '100%', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', border: 'none'
-                            }}>
-                                ⬇️ Download QR Code
-                            </a>
-                        </div>
-                    )}
-                </div>
+
 
                 <Link href="/dashboard/leads" style={{ position: 'relative', textDecoration: 'none' }}>
                     <div className="bell-icon" style={{ padding: '8px', background: 'var(--surface-2)', borderRadius: '8px', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '16px' }}>🔔</div>
