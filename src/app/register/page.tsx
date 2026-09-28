@@ -76,7 +76,6 @@ export default function RegisterPage() {
       if (role === 'STUDENT') router.push('/portal/student')
       else if (role === 'PARENT') router.push('/portal/parent')
       else if (role === 'TEACHER') router.push('/portal/staff')
-      else if (role === 'SUPER_ADMIN') router.push('/dashboard/super-admin/tenants')
       else router.push('/dashboard')
     } catch (err: any) {
       setError(err?.message || 'Network error occurred')

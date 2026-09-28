@@ -208,9 +208,6 @@ function DashboardHeader({ onMenuClick }: { onMenuClick: () => void }) {
             '/dashboard/transport': 'Transport',
             '/dashboard/profile': 'School Profile',
             '/dashboard/reports': 'Reports',
-            '/dashboard/super-admin': 'Platform Overview',
-            '/dashboard/super-admin/tenants': 'Schools',
-            '/dashboard/super-admin/subscriptions': 'System Config',
         }
         return map[pathname] || 'Dashboard'
     }

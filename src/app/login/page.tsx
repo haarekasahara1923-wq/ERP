@@ -34,7 +34,6 @@ function LoginForm() {
     else if (r === 'PARENT') router.push('/portal/parent')
     else if (r === 'DRIVER') router.push('/portal/driver')
     else if (r === 'TEACHER' || r === 'STAFF') router.push('/portal/staff')
-    else if (r === 'SUPER_ADMIN') router.push('/dashboard/super-admin/tenants')
     else router.push('/dashboard')
   }
 
