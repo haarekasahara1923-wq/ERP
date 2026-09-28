@@ -5,7 +5,7 @@ import Link from 'next/link'
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 
 function PortalShell({ children }: { children: React.ReactNode }) {
-  const { user, isLoading, logout, token } = useAuth()
+  const { user, tenant, isLoading, logout, token } = useAuth()
   const router = useRouter()
   const pathname = usePathname()
   const [qrModalOpen, setQrModalOpen] = useState(false)
@@ -101,12 +101,15 @@ function PortalShell({ children }: { children: React.ReactNode }) {
       {/* Top Header */}
       <header style={{ background: '#1e293b', borderBottom: '1px solid #334155', padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 50 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '32px', height: '32px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <img src="/logo.png" alt="UDBA Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+          <div style={{ width: '36px', height: '36px', borderRadius: '8px', overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.1)' }}>
+            <img src={tenant?.logo || "/logo.png"} alt="School Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
           </div>
           <div>
-            <div style={{ fontSize: '15px', fontWeight: '700', color: 'white' }}>Scalevo</div>
-            <div style={{ fontSize: '11px', color: '#94a3b8' }}>{role === 'STUDENT' ? 'Student Portal' : role === 'PARENT' ? 'Parent Portal' : role === 'DRIVER' ? 'Driver Portal' : 'Staff Portal'}</div>
+            <div style={{ fontSize: '15px', fontWeight: '700', color: 'white', lineHeight: '1.2' }}>{tenant?.name || 'Scalevo'}</div>
+            <div style={{ fontSize: '11px', color: '#94a3b8', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <span>{role === 'STUDENT' ? 'Student Portal' : role === 'PARENT' ? 'Parent Portal' : role === 'DRIVER' ? 'Driver Portal' : 'Staff Portal'}</span>
+              {tenant?.schoolCode && <span style={{ color: '#fbbf24', background: 'rgba(251,191,36,0.15)', padding: '2px 6px', borderRadius: '4px', fontFamily: 'monospace', fontWeight: '600' }}>{tenant.schoolCode}</span>}
+            </div>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

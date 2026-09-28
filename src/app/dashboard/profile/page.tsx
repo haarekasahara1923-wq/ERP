@@ -10,14 +10,46 @@ export default function ProfilePage() {
         email: tenant?.email || '',
         address: tenant?.address || '',
         themeColor: tenant?.themeColor || '#6366f1',
+        logo: tenant?.logo || ''
     })
     const [saved, setSaved] = useState(false)
+    const [loading, setLoading] = useState(false)
 
-    const handleSave = (e: React.FormEvent) => {
+    const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (file) {
+            const reader = new FileReader()
+            reader.onload = (ev) => {
+                setForm({ ...form, logo: ev.target?.result as string })
+            }
+            reader.readAsDataURL(file)
+        }
+    }
+
+    const handleSave = async (e: React.FormEvent) => {
         e.preventDefault()
-        // In production, call API to save
-        setSaved(true)
-        setTimeout(() => setSaved(false), 3000)
+        setLoading(true)
+        try {
+            const token = localStorage.getItem('scalevo_token') || localStorage.getItem('udba_token')
+            const res = await fetch('/api/dashboard/profile', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify(form)
+            })
+            const data = await res.json()
+            if (data.success) {
+                // Update local storage tenant
+                const key = localStorage.getItem('scalevo_tenant') ? 'scalevo_tenant' : 'udba_tenant'
+                localStorage.setItem(key, JSON.stringify(data.tenant))
+                setSaved(true)
+                setTimeout(() => setSaved(false), 3000)
+                // Force a page reload to reflect changes in AuthContext quickly
+                window.location.reload()
+            }
+        } catch (error) {
+            console.error('Failed to update profile', error)
+        }
+        setLoading(false)
     }
 
     return (
@@ -36,9 +68,18 @@ export default function ProfilePage() {
                     <div className="card" style={{ marginBottom: '20px' }}>
                         <h3 style={{ fontWeight: '700', marginBottom: '20px', fontSize: '16px', color: 'var(--primary-light)' }}>🏫 Institute Details</h3>
                         <form onSubmit={handleSave} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }}>
+                                <div style={{ width: '80px', height: '80px', borderRadius: '12px', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', border: '1px dashed rgba(255,255,255,0.2)' }}>
+                                    {form.logo ? <img src={form.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : 'No Logo'}
+                                </div>
+                                <div>
+                                    <label className="label">School Logo</label>
+                                    <input type="file" accept="image/*" onChange={handleLogoChange} style={{ fontSize: '12px', color: 'rgba(255,255,255,0.7)' }} />
+                                </div>
+                            </div>
                             <div>
                                 <label className="label">School Name</label>
-                                <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
+                                <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
                             </div>
                             <div>
                                 <label className="label">Phone Number</label>
@@ -59,7 +100,9 @@ export default function ProfilePage() {
                                     <input className="input" style={{ flex: 1 }} value={form.themeColor} onChange={e => setForm({ ...form, themeColor: e.target.value })} />
                                 </div>
                             </div>
-                            <button type="submit" className="btn btn-primary">💾 Save Changes</button>
+                            <button type="submit" className="btn btn-primary" disabled={loading}>
+                                {loading ? 'Saving...' : '💾 Save Changes'}
+                            </button>
                         </form>
                     </div>
                 </div>
@@ -70,7 +113,9 @@ export default function ProfilePage() {
                         <h3 style={{ fontWeight: '700', marginBottom: '16px', fontSize: '15px' }}>👁️ Preview</h3>
                         <div style={{ padding: '20px', background: 'var(--surface)', borderRadius: '12px', border: `2px solid ${form.themeColor}40` }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px' }}>
-                                <div style={{ width: '48px', height: '48px', background: `linear-gradient(135deg, ${form.themeColor}, ${form.themeColor}88)`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>🎓</div>
+                                <div style={{ width: '48px', height: '48px', background: form.logo ? 'transparent' : `linear-gradient(135deg, ${form.themeColor}, ${form.themeColor}88)`, borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', overflow: 'hidden' }}>
+                                    {form.logo ? <img src={form.logo} alt="School Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} /> : '🎓'}
+                                </div>
                                 <div>
                                     <div style={{ fontWeight: '800', fontSize: '16px', color: 'white' }}>{form.name || 'Your School Name'}</div>
                                     <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{form.phone}</div>
