@@ -59,9 +59,8 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        // For SUPER_ADMIN: Direct through school-signup route preferred;
-        // but if somehow they end up here, find or warn.
-        if (!school && userRole === 'SUPER_ADMIN') {
+        // Fallback to first available school if none specified
+        if (!school) {
             school = await prisma.tenant.findFirst()
         }
 
