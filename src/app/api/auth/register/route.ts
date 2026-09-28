@@ -114,7 +114,7 @@ export async function POST(req: NextRequest) {
                             tenantId: resolvedTenantId,
                             userId: user.id,
                             fullName: name,
-                            phone: resolvedPhone || null,
+                            phone: resolvedPhone || "",
                             courseId: dummyCourse.id,
                             batchId: dummyBatch.id,
                             status: 'ACTIVE',
@@ -137,7 +137,7 @@ export async function POST(req: NextRequest) {
                         tenantId: resolvedTenantId,
                         name,
                         email: resolvedEmail,
-                        phone: resolvedPhone || null,
+                        phone: resolvedPhone || "",
                     }
                 })
             } else if (userRole === 'DRIVER') {
