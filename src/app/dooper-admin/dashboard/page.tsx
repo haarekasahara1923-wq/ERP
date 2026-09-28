@@ -6,6 +6,7 @@ interface Tenant {
   id: string
   name: string
   slug: string
+  schoolCode: string | null
   email: string
   phone: string
   address: string
@@ -31,7 +32,7 @@ interface Stats {
   totalStudents: number
 }
 
-type ModalType = 'edit' | 'delete' | null
+type ModalType = 'edit' | 'delete' | 'broadcast' | null
 
 export default function DooperDashboard() {
   const router = useRouter()
@@ -47,6 +48,7 @@ export default function DooperDashboard() {
   const [actionLoading, setActionLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [showPasswords, setShowPasswords] = useState<Record<string, boolean>>({})
+  const [copiedCode, setCopiedCode] = useState<string | null>(null)
 
   useEffect(() => {
     const t = localStorage.getItem('dooper_token')
@@ -135,6 +137,29 @@ export default function DooperDashboard() {
     setModal('edit')
   }
 
+  const openBroadcast = (t: Tenant) => {
+    setSelectedTenant(t)
+    setModal('broadcast')
+  }
+
+  const copyToClipboard = async (text: string, id: string) => {
+    try {
+      await navigator.clipboard.writeText(text)
+      setCopiedCode(id)
+      setTimeout(() => setCopiedCode(null), 2000)
+    } catch { }
+  }
+
+  // Double scrollbar synchronization
+  const handleTopScroll = (e: any) => {
+    const bottomWrapper = document.getElementById('table-scroll-bottom')
+    if (bottomWrapper) bottomWrapper.scrollLeft = e.target.scrollLeft
+  }
+  const handleBottomScroll = (e: any) => {
+    const topWrapper = document.getElementById('table-scroll-top')
+    if (topWrapper) topWrapper.scrollLeft = e.target.scrollLeft
+  }
+
   const togglePassword = (id: string) => setShowPasswords(p => ({ ...p, [id]: !p[id] }))
 
   const filtered = tenants.filter(t =>
@@ -170,6 +195,9 @@ export default function DooperDashboard() {
         .badge { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
         .badge-active { background: rgba(16,185,129,0.15); color: #34d399; border: 1px solid rgba(16,185,129,0.3); }
         .badge-blocked { background: rgba(239,68,68,0.15); color: #f87171; border: 1px solid rgba(239,68,68,0.3); }
+        .school-code-badge { display: inline-flex; align-items: center; gap: 6px; background: rgba(251,191,36,0.12); border: 1px solid rgba(251,191,36,0.35); color: #fbbf24; padding: 5px 10px; border-radius: 8px; font-family: monospace; font-size: 13px; font-weight: 800; letter-spacing: 1px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .school-code-badge:hover { background: rgba(251,191,36,0.2); border-color: rgba(251,191,36,0.6); }
+        .no-code-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(255,255,255,0.04); border: 1px dashed rgba(255,255,255,0.15); color: rgba(255,255,255,0.3); padding: 4px 10px; border-radius: 8px; font-size: 11px; white-space: nowrap; }
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
@@ -244,31 +272,47 @@ export default function DooperDashboard() {
               {search ? '🔍 No schools found matching your search' : '🏫 No schools registered yet'}
             </div>
           ) : (
-            <div className="tbl-scroll">
-              <table>
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>School Name</th>
-                    <th>Director Name</th>
-                    <th>Contact No.</th>
-                    <th>Email ID</th>
-                    <th>Address</th>
-                    <th>Admin Email</th>
-                    <th>Admin Password</th>
-                    <th>Students</th>
-                    <th>Status</th>
-                    <th>Registered On</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
+            <>
+              {/* Top Scrollbar Dummy Element */}
+              <div id="table-scroll-top" style={{ overflowX: 'auto', marginBottom: '4px' }} onScroll={handleTopScroll}>
+                <div style={{ height: '1px', width: '1800px' }}></div> {/* 1800px is approx table width */}
+              </div>
+              
+              <div id="table-scroll-bottom" className="tbl-scroll" style={{ overflowX: 'auto' }} onScroll={handleBottomScroll}>
+                <table style={{ minWidth: '1800px' }}>
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>School Name</th>
+                      <th>School ID</th>
+                      <th>Director Name</th>
+                      <th>Contact No.</th>
+                      <th>Email ID</th>
+                      <th>Address</th>
+                      <th>Admin Email</th>
+                      <th>Admin Password</th>
+                      <th>Students</th>
+                      <th>Status</th>
+                      <th>Registered On</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
                   {filtered.map((t, i) => (
                     <tr key={t.id}>
                       <td style={{ color: 'rgba(255,255,255,0.3)', fontWeight: '600' }}>{i + 1}</td>
                       <td>
                         <div style={{ fontWeight: '700', color: 'white' }}>{t.name}</div>
                         <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', marginTop: '2px' }}>/{t.slug}</div>
+                      </td>
+                      <td>
+                        {t.schoolCode ? (
+                          <span className="school-code-badge" onClick={() => openBroadcast(t)}>
+                            {t.schoolCode} <span style={{ fontSize: '14px' }}>📢</span>
+                          </span>
+                        ) : (
+                          <span className="no-code-badge">No Code</span>
+                        )}
                       </td>
                       <td style={{ fontWeight: '600', color: '#e2e8f0' }}>{t.directorName || '—'}</td>
                       <td style={{ color: '#a5b4fc', fontWeight: '600' }}>{t.directorPhone || t.phone || '—'}</td>
@@ -320,6 +364,7 @@ export default function DooperDashboard() {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </div>
       </main>
@@ -400,6 +445,67 @@ export default function DooperDashboard() {
                 {actionLoading ? 'Deleting...' : '🗑️ Yes, Delete'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Broadcast Modal */}
+      {modal === 'broadcast' && selectedTenant && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}
+          onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div style={{ background: '#0d0b14', border: '1px solid rgba(251,191,36,0.3)', borderRadius: '24px', padding: '36px', width: '100%', maxWidth: '540px', boxShadow: '0 24px 80px rgba(0,0,0,0.8)' }}>
+            <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+              <div style={{ fontSize: '56px', marginBottom: '12px' }}>📢</div>
+              <h3 style={{ fontWeight: '900', fontSize: '22px', color: 'white', marginBottom: '6px' }}>Broadcast School ID</h3>
+              <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '13px', lineHeight: '1.6' }}>
+                Share this Unique School ID with all <strong style={{ color: '#fbbf24' }}>Teachers, Parents, and Students</strong> of <strong style={{ color: 'white' }}>{selectedTenant.name}</strong>.<br />
+                They will need this ID when signing up/logging in.
+              </p>
+            </div>
+
+            {/* Big School Code Display */}
+            <div style={{ background: 'rgba(251,191,36,0.08)', border: '2px solid rgba(251,191,36,0.4)', borderRadius: '16px', padding: '24px', textAlign: 'center', marginBottom: '24px' }}>
+              <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(251,191,36,0.6)', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '10px' }}>Unique School ID</div>
+              <div style={{ fontSize: '36px', fontWeight: '900', color: '#fbbf24', fontFamily: 'monospace', letterSpacing: '4px', marginBottom: '16px' }}>
+                {selectedTenant.schoolCode}
+              </div>
+              <button
+                onClick={() => copyToClipboard(selectedTenant.schoolCode!, 'code')}
+                style={{
+                  padding: '10px 24px', background: copiedCode === 'code' ? 'rgba(16,185,129,0.2)' : 'rgba(251,191,36,0.15)',
+                  border: `1px solid ${copiedCode === 'code' ? 'rgba(16,185,129,0.5)' : 'rgba(251,191,36,0.4)'}`,
+                  borderRadius: '10px', color: copiedCode === 'code' ? '#34d399' : '#fbbf24',
+                  fontSize: '14px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px'
+                }}>
+                {copiedCode === 'code' ? '✅ Copied!' : '📋 Copy School ID'}
+              </button>
+            </div>
+
+            {/* Instructions */}
+            <div style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+              <div style={{ fontSize: '12px', fontWeight: '700', color: 'rgba(255,255,255,0.5)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>📋 Broadcast Message (Copy & Send)</div>
+              <div style={{ fontSize: '13px', color: 'white', lineHeight: '1.8', fontStyle: 'italic', background: 'rgba(0,0,0,0.3)', borderRadius: '8px', padding: '12px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                🏫 <strong style={{ color: 'white' }}>Important — School Registration ID</strong><br />
+                Dear Teachers, Parents & Students of <strong style={{ color: '#fbbf24' }}>{selectedTenant.name}</strong>,<br /><br />
+                Please use the following <strong>Unique School ID</strong> when signing up to the Scalevo ERP system:<br /><br />
+                🔑 <strong style={{ color: '#fbbf24', fontFamily: 'monospace', fontSize: '16px', letterSpacing: '2px' }}>{selectedTenant.schoolCode}</strong><br /><br />
+                This School ID ensures your data is securely linked to our school. Please do not share it outside.<br /><br />
+                — School Administration
+              </div>
+              <button
+                onClick={() => copyToClipboard(
+                  `🏫 Important — School Registration ID\nDear Teachers, Parents & Students of ${selectedTenant.name},\n\nPlease use the following Unique School ID when signing up to the Scalevo ERP system:\n\n🔑 ${selectedTenant.schoolCode}\n\nThis School ID ensures your data is securely linked to our school. Please do not share it outside.\n\n— School Administration`,
+                  'msg'
+                )}
+                style={{ marginTop: '10px', padding: '7px 16px', background: 'rgba(99,102,241,0.15)', border: '1px solid rgba(99,102,241,0.3)', borderRadius: '8px', color: '#a5b4fc', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
+                {copiedCode === 'msg' ? '✅ Message Copied!' : '📱 Copy Full Message'}
+              </button>
+            </div>
+
+            <button onClick={() => setModal(null)}
+              style={{ width: '100%', padding: '12px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: 'rgba(255,255,255,0.6)', fontSize: '14px', cursor: 'pointer', fontWeight: '600' }}>
+              Close
+            </button>
           </div>
         </div>
       )}
