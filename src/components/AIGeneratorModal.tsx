@@ -141,7 +141,13 @@ export default function AIGeneratorModal({ isOpen, onClose }: AIGeneratorModalPr
     }
 
     return (
-        <div style={overlayStyle}>
+        <div style={overlayStyle} onClick={(e) => { if (e.target === e.currentTarget) onClose() }}>
+            <style>{`
+                .ai-modal-scroll::-webkit-scrollbar { width: 12px; }
+                .ai-modal-scroll::-webkit-scrollbar-track { background: rgba(0,0,0,0.05); border-radius: 10px; }
+                .ai-modal-scroll::-webkit-scrollbar-thumb { background: rgba(99,102,241,0.5); border-radius: 10px; border: 3px solid transparent; background-clip: padding-box; }
+                .ai-modal-scroll::-webkit-scrollbar-thumb:hover { background-color: rgba(99,102,241,0.9); }
+            `}</style>
             <div style={modalStyle}>
                 <div style={headerStyle}>
                     <h2 style={{ margin: 0, fontSize: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -149,11 +155,12 @@ export default function AIGeneratorModal({ isOpen, onClose }: AIGeneratorModalPr
                     </h2>
                     <button
                         onClick={onClose}
-                        style={{ background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: 'var(--text-secondary)' }}
-                    >&times;</button>
+                        title="Close AI Assistant"
+                        style={{ background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.3)', width: '36px', height: '36px', borderRadius: '8px', fontSize: '18px', cursor: 'pointer', color: '#ef4444', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold' }}
+                    >✕</button>
                 </div>
 
-                <div style={bodyStyle}>
+                <div style={bodyStyle} className="ai-modal-scroll">
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '16px' }}>
                         <div>
                             <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Content Type</label>
@@ -230,6 +237,7 @@ export default function AIGeneratorModal({ isOpen, onClose }: AIGeneratorModalPr
                             </div>
 
                             <div
+                                className="ai-modal-scroll"
                                 style={{
                                     padding: '20px',
                                     background: '#f8fafc',
