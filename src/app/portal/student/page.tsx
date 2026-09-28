@@ -3,11 +3,17 @@ import { useAuth } from '@/contexts/AuthContext'
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
 
+import { BirthdayCertificateModal } from '@/components/BirthdayCertificateModal'
+import { StudentIdCard } from '@/components/StudentIdCard'
+
 export default function StudentHome() {
-  const { user, token } = useAuth()
+  const { user, token, tenant } = useAuth()
   const [notices, setNotices] = useState<any[]>([])
   const [homeworks, setHomeworks] = useState<any[]>([])
+  const [studentProfile, setStudentProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [showBirthday, setShowBirthday] = useState(false)
+  const [showIdCard, setShowIdCard] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -15,9 +21,22 @@ export default function StudentHome() {
     Promise.all([
       fetch('/api/notices', { headers: h }).then(r => r.json()),
       fetch('/api/homework', { headers: h }).then(r => r.json()),
-    ]).then(([n, hw]) => {
+      fetch('/api/portal/profile', { headers: h }).then(r => r.json())
+    ]).then(([n, hw, profileRes]) => {
       setNotices(n.notices?.slice(0, 3) || [])
       setHomeworks(hw.homeworks?.slice(0, 3) || [])
+      
+      const prof = profileRes.profile;
+      setStudentProfile(prof);
+      
+      // Check Birthday
+      if (prof?.dob) {
+        const dob = new Date(prof.dob);
+        const today = new Date();
+        if (dob.getDate() === today.getDate() && dob.getMonth() === today.getMonth()) {
+          setShowBirthday(true);
+        }
+      }
       setLoading(false)
     })
   }, [token])
@@ -44,6 +63,11 @@ export default function StudentHome() {
             </div>
           </Link>
         ))}
+        {/* ID Card Action */}
+        <div onClick={() => setShowIdCard(true)} style={{ cursor: 'pointer', background: '#1e293b', border: '1px solid #334155', borderRadius: '14px', padding: '18px', display: 'flex', flexDirection: 'column', gap: '10px', alignItems: 'center', textAlign: 'center' }}>
+          <div style={{ fontSize: '30px' }}>🪪</div>
+          <div style={{ fontSize: '13px', fontWeight: '600', color: 'white' }}>ID Card</div>
+        </div>
       </div>
 
       {/* Recent Homework */}
@@ -75,6 +99,24 @@ export default function StudentHome() {
           ))
         }
       </div>
+
+      {showBirthday && studentProfile && (
+        <BirthdayCertificateModal 
+          isOpen={showBirthday} 
+          onClose={() => setShowBirthday(false)}
+          student={studentProfile}
+          school={tenant}
+        />
+      )}
+
+      {showIdCard && studentProfile && (
+        <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.8)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+          <div style={{ position: 'relative' }}>
+            <button onClick={() => setShowIdCard(false)} style={{ position: 'absolute', top: '-40px', right: 0, background: 'none', border: 'none', color: 'white', fontSize: '30px', cursor: 'pointer' }}>&times;</button>
+            <StudentIdCard student={studentProfile} school={tenant} />
+          </div>
+        </div>
+      )}
     </div>
   )
 }

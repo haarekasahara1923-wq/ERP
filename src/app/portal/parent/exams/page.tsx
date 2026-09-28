@@ -179,6 +179,9 @@ export default function ParentExams() {
                         {/* Printable Report Card Area */}
                         <div id={reportCardId} style={{ padding: '24px', background: '#1e293b', color: 'white' }}>
                             <div style={{ textAlign: 'center', marginBottom: '24px', borderBottom: '2px solid #334155', paddingBottom: '16px' }}>
+                                {profile?.tenant?.logo && (
+                                    <img src={profile.tenant.logo} alt="School Logo" style={{ height: '60px', objectFit: 'contain', marginBottom: '8px' }} crossOrigin="anonymous" />
+                                )}
                                 <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '800' }}>{schoolName}</h2>
                                 <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '600', color: '#10b981' }}>{examTitle}</h3>
                                 <p style={{ margin: 0, fontSize: '14px', color: '#94a3b8' }}>Academic Year: {currentYear}</p>

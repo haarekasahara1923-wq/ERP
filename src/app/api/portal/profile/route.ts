@@ -2,6 +2,39 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { verifyAccessToken } from '@/lib/auth'
 
+export async function GET(req: NextRequest) {
+    try {
+        const token = req.headers.get('authorization')?.split(' ')[1]
+        if (!token) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+        
+        const user = verifyAccessToken(token)
+        if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+        let profile = null;
+
+        if (user.role === 'STUDENT') {
+            profile = await prisma.student.findUnique({
+                where: { userId: user.userId },
+                include: { course: true, batch: true }
+            })
+        } else if (user.role === 'PARENT') {
+            profile = await prisma.parentProfile.findUnique({
+                where: { userId: user.userId },
+                include: { children: { include: { course: true, batch: true } } }
+            })
+        } else {
+            profile = await prisma.user.findUnique({
+                where: { id: user.userId }
+            })
+        }
+
+        return NextResponse.json({ success: true, profile })
+    } catch (error) {
+        console.error('Portal profile fetch error:', error)
+        return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    }
+}
+
 export async function PUT(req: NextRequest) {
     try {
         const token = req.headers.get('authorization')?.split(' ')[1]
