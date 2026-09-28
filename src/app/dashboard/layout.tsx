@@ -104,10 +104,10 @@ const adminTransportNav = [
 const getNavForRole = (role: string) => {
     if (role === 'SUPER_ADMIN' || role === 'COACHING_ADMIN') {
         const nav = JSON.parse(JSON.stringify(navItems))
-        const mgmtGroup = nav.find((g: any) => g.group === 'MANAGEMENT')
-        if (mgmtGroup) {
-            const analyticsIdx = mgmtGroup.items.findIndex((item: any) => item.href === '/dashboard/analytics')
-            mgmtGroup.items.splice(analyticsIdx !== -1 ? analyticsIdx + 1 : mgmtGroup.items.length, 0, { href: '/dashboard/super-admin/manage-admins', icon: '👥', label: 'Manage Admins' })
+        const overviewGroup = nav.find((g: any) => g.group === 'OVERVIEW')
+        if (overviewGroup) {
+            const analyticsIdx = overviewGroup.items.findIndex((item: any) => item.href === '/dashboard/analytics')
+            overviewGroup.items.splice(analyticsIdx !== -1 ? analyticsIdx + 1 : overviewGroup.items.length, 0, { href: '/dashboard/super-admin/manage-admins', icon: '👥', label: 'Manage Admins' })
         }
         return nav
     }
