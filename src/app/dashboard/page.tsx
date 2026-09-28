@@ -4,7 +4,7 @@ import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 
 export default function AdminDashboard() {
-  const { token, tenant } = useAuth()
+  const { token, tenant, user } = useAuth()
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
@@ -40,6 +40,11 @@ export default function AdminDashboard() {
     { href: '/dashboard/analytics', icon: '📈', label: 'Analytics', color: '#8b5cf6', bg: 'rgba(139,92,246,0.1)' },
     { href: '/dashboard/profile', icon: '🏢', label: 'School Profile', color: '#94a3b8', bg: 'rgba(148,163,184,0.1)' },
   ]
+
+  if (user?.role === 'SUPER_ADMIN' || user?.role === 'COACHING_ADMIN') {
+      const idx = actionButtons.findIndex(a => a.href === '/dashboard/analytics')
+      actionButtons.splice(idx !== -1 ? idx + 1 : actionButtons.length, 0, { href: '/dashboard/super-admin/manage-admins', icon: '👥', label: 'Manage Admins', color: '#10b981', bg: 'rgba(16,185,129,0.1)' })
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>

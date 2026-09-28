@@ -106,7 +106,8 @@ const getNavForRole = (role: string) => {
         const nav = JSON.parse(JSON.stringify(navItems))
         const mgmtGroup = nav.find((g: any) => g.group === 'MANAGEMENT')
         if (mgmtGroup) {
-            mgmtGroup.items.push({ href: '/dashboard/super-admin/manage-admins', icon: '👥', label: 'Manage Admins' })
+            const analyticsIdx = mgmtGroup.items.findIndex((item: any) => item.href === '/dashboard/analytics')
+            mgmtGroup.items.splice(analyticsIdx !== -1 ? analyticsIdx + 1 : mgmtGroup.items.length, 0, { href: '/dashboard/super-admin/manage-admins', icon: '👥', label: 'Manage Admins' })
         }
         return nav
     }
