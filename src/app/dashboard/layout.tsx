@@ -142,10 +142,10 @@ function DashboardSidebar({ open, onClose }: { open: boolean; onClose: () => voi
 
                 {/* Nav */}
                 <nav className="sidebar-nav">
-                    {allNavItems.map(group => (
+                    {allNavItems.map((group: any) => (
                         <div key={group.group}>
                             <div className="sidebar-section-title">{group.group}</div>
-                            {group.items.map(item => (
+                            {group.items.map((item: any) => (
                                 <Link
                                     key={item.href}
                                     href={item.href}
