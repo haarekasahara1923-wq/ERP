@@ -14,10 +14,12 @@ interface Teacher {
 }
 
 export default function TeachersPage() {
-    const { token } = useAuth()
+    const { token, user } = useAuth()
+    const canEdit = user?.role === 'SUPER_ADMIN' || user?.role === 'COACHING_ADMIN'
     const [teachers, setTeachers] = useState<Teacher[]>([])
     const [loading, setLoading] = useState(true)
-    const [showAdd, setShowAdd] = useState(false)
+    const [showModal, setShowModal] = useState(false)
+    const [editingTeacher, setEditingTeacher] = useState<Teacher | null>(null)
     const [form, setForm] = useState({ name: '', email: '', phone: '', subject: '', salary: '', joinDate: new Date().toISOString().split('T')[0] })
     const [saving, setSaving] = useState(false)
     const [toast, setToast] = useState('')
@@ -32,23 +34,85 @@ export default function TeachersPage() {
 
     useEffect(() => { fetchTeachers() }, [token])
 
-    const handleAdd = async (e: React.FormEvent) => {
+    const openAddModal = () => {
+        setEditingTeacher(null)
+        setForm({ name: '', email: '', phone: '', subject: '', salary: '', joinDate: new Date().toISOString().split('T')[0] })
+        setShowModal(true)
+    }
+
+    const openEditModal = (t: Teacher) => {
+        setEditingTeacher(t)
+        setForm({
+            name: t.name,
+            email: t.email,
+            phone: t.phone,
+            subject: t.subject.join(', '),
+            salary: t.salary.toString(),
+            joinDate: t.joinDate.split('T')[0]
+        })
+        setShowModal(true)
+    }
+
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         setSaving(true)
+        const method = editingTeacher ? 'PATCH' : 'POST'
+        const bodyData = {
+            ...form,
+            subject: form.subject.split(',').map(s => s.trim()).filter(Boolean),
+            ...(editingTeacher ? { id: editingTeacher.id } : {})
+        }
+        
         const res = await fetch('/api/teachers', {
-            method: 'POST',
+            method,
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ ...form, subject: form.subject.split(',').map(s => s.trim()) }),
+            body: JSON.stringify(bodyData),
         })
         const data = await res.json()
         setSaving(false)
         if (data.success) {
-            setToast('Teacher added!')
-            setShowAdd(false)
+            setToast(editingTeacher ? 'Teacher updated!' : 'Teacher added!')
+            setShowModal(false)
             fetchTeachers()
             setTimeout(() => setToast(''), 3000)
         } else {
-            setToast(data.error || 'Failed to add teacher')
+            setToast(data.error || 'Failed to save teacher')
+            setTimeout(() => setToast(''), 3000)
+        }
+    }
+
+    const handleDelete = async (id: string) => {
+        if (!confirm('Are you sure you want to delete this teacher?')) return
+        const res = await fetch(`/api/teachers?id=${id}`, {
+            method: 'DELETE',
+            headers: { Authorization: `Bearer ${token}` }
+        })
+        const data = await res.json()
+        if (data.success) {
+            setToast('Teacher deleted')
+            fetchTeachers()
+            setTimeout(() => setToast(''), 3000)
+        } else {
+            setToast(data.error || 'Failed to delete')
+            setTimeout(() => setToast(''), 3000)
+        }
+    }
+
+    const handleToggleBlock = async (t: Teacher) => {
+        const action = t.isActive ? 'block' : 'unblock'
+        if (!confirm(`Are you sure you want to ${action} this teacher?`)) return
+        const res = await fetch('/api/teachers', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ id: t.id, isActive: !t.isActive })
+        })
+        const data = await res.json()
+        if (data.success) {
+            setToast(`Teacher ${action}ed`)
+            fetchTeachers()
+            setTimeout(() => setToast(''), 3000)
+        } else {
+            setToast(data.error || `Failed to ${action}`)
             setTimeout(() => setToast(''), 3000)
         }
     }
@@ -62,7 +126,7 @@ export default function TeachersPage() {
                     <h1 className="page-title">👩‍🏫 Teacher Management</h1>
                     <p className="page-subtitle">{teachers.length} teachers • Monthly outflow: ₹{totalSalary.toLocaleString('en-IN')}</p>
                 </div>
-                <button onClick={() => setShowAdd(true)} className="btn btn-primary">➕ Add Teacher</button>
+                {canEdit && <button onClick={openAddModal} className="btn btn-primary">➕ Add Teacher</button>}
             </div>
 
             {toast && <div className="toast toast-success" style={{ position: 'relative', marginBottom: '16px', maxWidth: '100%' }}>✓ {toast}</div>}
@@ -107,22 +171,29 @@ export default function TeachersPage() {
                             </div>
                         </div>
 
-                        <div style={{ display: 'flex', gap: '8px' }}>
+                        <div style={{ display: 'flex', gap: '8px', marginBottom: canEdit ? '8px' : '0' }}>
                             <a href={`https://wa.me/91${t.phone.replace(/\D/g, '')}`} target="_blank" style={{ flex: 1, padding: '8px', background: '#25d36615', border: '1px solid #25d36630', borderRadius: '8px', color: '#25d366', fontSize: '13px', textDecoration: 'none', textAlign: 'center', fontWeight: '600' }}>💬 WhatsApp</a>
                             <button onClick={() => alert("Teacher Performance Analytics module is currently under development.")} className="btn btn-secondary btn-sm" style={{ flex: 1, justifyContent: 'center' }}>📊 Performance</button>
                         </div>
+                        {canEdit && (
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                                <button onClick={() => openEditModal(t)} className="btn btn-secondary btn-sm" style={{ flex: 1, justifyContent: 'center' }}>✏️ Edit</button>
+                                <button onClick={() => handleToggleBlock(t)} className="btn btn-secondary btn-sm" style={{ flex: 1, justifyContent: 'center', color: t.isActive ? '#eab308' : '#10b981' }}>{t.isActive ? '🚫 Block' : '✅ Unblock'}</button>
+                                <button onClick={() => handleDelete(t.id)} className="btn btn-secondary btn-sm" style={{ flex: 1, justifyContent: 'center', color: '#ef4444' }}>🗑️ Delete</button>
+                            </div>
+                        )}
                     </div>
                 ))}
             </div>
 
-            {showAdd && (
+            {showModal && (
                 <div className="modal-overlay">
                     <div className="modal">
                         <div className="modal-header">
-                            <h3 style={{ fontWeight: '700' }}>👩‍🏫 Add Teacher</h3>
-                            <button onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+                            <h3 style={{ fontWeight: '700' }}>👩‍🏫 {editingTeacher ? 'Edit Teacher' : 'Add Teacher'}</h3>
+                            <button onClick={() => setShowModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}>✕</button>
                         </div>
-                        <form onSubmit={handleAdd}>
+                        <form onSubmit={handleSubmit}>
                             <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                                 <div><label className="label">Full Name *</label><input className="input" placeholder="Dr. Rajesh Kumar" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required /></div>
                                 <div className="grid-cols-2">
@@ -136,8 +207,8 @@ export default function TeachersPage() {
                                 </div>
                             </div>
                             <div className="modal-footer">
-                                <button type="button" onClick={() => setShowAdd(false)} className="btn btn-secondary">Cancel</button>
-                                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? '⏳' : '✅ Add Teacher'}</button>
+                                <button type="button" onClick={() => setShowModal(false)} className="btn btn-secondary">Cancel</button>
+                                <button type="submit" className="btn btn-primary" disabled={saving}>{saving ? '⏳' : (editingTeacher ? '✅ Save Changes' : '✅ Add Teacher')}</button>
                             </div>
                         </form>
                     </div>

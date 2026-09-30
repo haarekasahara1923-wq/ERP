@@ -22,6 +22,7 @@ export default function StaffHomework() {
     attachmentUrl: ''
   })
   const [creating, setCreating] = useState(false)
+  const [uploadingImage, setUploadingImage] = useState(false)
 
   // Submissions & Review state
   const [selectedHomeworkId, setSelectedHomeworkId] = useState('')
@@ -406,18 +407,56 @@ export default function StaffHomework() {
             />
           </div>
 
-          {/* Attachment / Drive Link */}
+          {/* Photo / Camera Upload */}
           <div>
             <label style={{ fontSize: '12px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px', display: 'block' }}>
-              Reference Material URL / PDF Drive Link (Optional)
+              Upload Homework Photo / Reference Material (Optional)
             </label>
-            <input
-              type="url"
-              placeholder="https://drive.google.com/... or link to question paper"
-              value={form.attachmentUrl}
-              onChange={e => setForm(p => ({ ...p, attachmentUrl: e.target.value }))}
-              style={inputStyle}
-            />
+            <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="file"
+                accept="image/*,application/pdf"
+                capture="environment"
+                onChange={async e => {
+                  const file = e.target.files?.[0]
+                  if (!file) return
+                  setUploadingImage(true)
+                  const fd = new FormData()
+                  fd.append('file', file)
+                  try {
+                    const res = await fetch('/api/upload', { method: 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd })
+                    const data = await res.json()
+                    if (data.url) {
+                      setForm(p => ({ ...p, attachmentUrl: data.url }))
+                    } else {
+                      setMsg({ text: data.error || 'Upload failed', type: 'error' })
+                    }
+                  } catch (err) {
+                    setMsg({ text: 'Upload error', type: 'error' })
+                  }
+                  setUploadingImage(false)
+                }}
+                style={{ ...inputStyle, padding: '8px' }}
+              />
+              {uploadingImage && <div className="spinner" style={{ width: '20px', height: '20px', borderWidth: '2px' }} />}
+            </div>
+            {form.attachmentUrl && (
+              <div style={{ marginTop: '8px' }}>
+                <a href={form.attachmentUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontSize: '12px', textDecoration: 'underline' }}>
+                  ✓ Attachment Uploaded (Click to view)
+                </a>
+              </div>
+            )}
+            <div style={{ marginTop: '8px', fontSize: '11px', color: '#94a3b8' }}>
+              Or enter URL manually:
+              <input
+                type="url"
+                placeholder="https://drive.google.com/..."
+                value={form.attachmentUrl}
+                onChange={e => setForm(p => ({ ...p, attachmentUrl: e.target.value }))}
+                style={{ ...inputStyle, padding: '6px 10px', marginTop: '4px' }}
+              />
+            </div>
           </div>
 
           {/* Submit Button */}

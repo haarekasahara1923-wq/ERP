@@ -147,10 +147,20 @@ export default function StudentHomework() {
               )}
 
               {hw.attachmentUrl && (
-                <div>
-                  <a href={hw.attachmentUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontSize: '12px', textDecoration: 'underline' }}>
-                    📎 View Teacher Reference Material / Worksheet
-                  </a>
+                <div style={{ marginTop: '10px' }}>
+                  {hw.attachmentUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) || hw.attachmentUrl.includes('cloudinary') ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <span style={{ fontSize: '12px', color: '#cbd5e1', fontWeight: '600' }}>Teacher's Attached Photo:</span>
+                      <img src={hw.attachmentUrl} alt="Homework Attachment" style={{ maxWidth: '100%', maxHeight: '400px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #334155' }} />
+                      <a href={hw.attachmentUrl} download="Homework_Attachment" target="_blank" rel="noopener noreferrer" style={{ display: 'inline-block', background: '#3b82f6', color: 'white', padding: '6px 12px', borderRadius: '6px', fontSize: '12px', textDecoration: 'none', textAlign: 'center', fontWeight: '600', width: 'max-content' }}>
+                        ⬇️ Download Image
+                      </a>
+                    </div>
+                  ) : (
+                    <a href={hw.attachmentUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#818cf8', fontSize: '12px', textDecoration: 'underline', display: 'inline-block', background: 'rgba(129, 140, 248, 0.1)', padding: '6px 12px', borderRadius: '6px' }}>
+                      📎 View Teacher Reference Material
+                    </a>
+                  )}
                 </div>
               )}
 
