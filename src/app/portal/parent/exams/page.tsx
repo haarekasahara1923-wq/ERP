@@ -49,8 +49,9 @@ export default function ParentExams() {
     const clone = original.cloneNode(true) as HTMLElement
     clone.style.background = '#ffffff'
     clone.style.color = '#000000'
-    clone.style.width = '800px' // Fixed width to ensure table fits perfectly
-    clone.style.padding = '40px'
+    // A4 width is 210mm, we use that exactly to ensure perfect fit without clipping
+    clone.style.width = '210mm'
+    clone.style.padding = '20mm' // Side margins for the content inside A4
     clone.style.boxSizing = 'border-box'
 
     // Overwrite styles on the clone to ensure dark text and visible borders
@@ -93,11 +94,11 @@ export default function ParentExams() {
     document.body.appendChild(wrapper)
 
     const opt = {
-      margin:       0.5,
+      margin:       0, // Margin is handled via the clone's 20mm padding
       filename:     `${title.replace(/\s+/g, '_')}_Report_Card.pdf`,
       image:        { type: 'jpeg', quality: 1 },
       html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
-      jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
+      jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
     }
     
     // @ts-ignore
