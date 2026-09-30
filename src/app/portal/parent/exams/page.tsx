@@ -42,40 +42,69 @@ export default function ParentExams() {
   }, {})
 
   const downloadPDF = (elementId: string, title: string) => {
-    const element = document.getElementById(elementId)
-    if (!element) return
-    // Temporarily adjust styles for better PDF output
-    element.style.background = '#ffffff'
-    element.style.color = '#000000'
-    const ths = element.querySelectorAll('th')
+    const original = document.getElementById(elementId)
+    if (!original) return
+
+    // Create a clone so we don't mess up the UI while generating PDF
+    const clone = original.cloneNode(true) as HTMLElement
+    clone.style.background = '#ffffff'
+    clone.style.color = '#000000'
+    clone.style.width = '800px' // Fixed width to ensure table fits perfectly
+    clone.style.padding = '40px'
+    clone.style.boxSizing = 'border-box'
+
+    // Overwrite styles on the clone to ensure dark text and visible borders
+    const ths = clone.querySelectorAll('th')
     ths.forEach(th => {
       th.style.background = '#f1f5f9'
-      th.style.color = '#0f172a'
+      th.style.color = '#000000'
+      th.style.borderColor = '#000000'
     })
-    const tds = element.querySelectorAll('td')
+    const tds = clone.querySelectorAll('td')
     tds.forEach(td => {
-      td.style.color = '#0f172a'
+      // Keep green color if it's there, otherwise black
+      if (td.style.color !== 'rgb(16, 185, 129)' && td.style.color !== '#10b981') {
+          td.style.color = '#000000'
+      }
+      td.style.borderColor = '#000000'
     })
+    
+    // Change all text nodes to black to ensure visibility on white background
+    const allEls = clone.querySelectorAll('*')
+    allEls.forEach((el: any) => {
+        const color = el.style.color
+        if (color === 'white' || color === 'rgb(255, 255, 255)' || color === '#94a3b8' || color === 'rgb(148, 163, 184)' || color === '#cbd5e1') {
+            el.style.color = '#000000'
+        }
+        if (el.style.borderTopColor === '#334155' || el.style.borderTopColor === 'rgb(51, 65, 85)') {
+            el.style.borderTopColor = '#000000'
+        }
+        if (el.style.borderBottomColor === '#334155' || el.style.borderBottomColor === 'rgb(51, 65, 85)') {
+            el.style.borderBottomColor = '#000000'
+        }
+    })
+
+    // Mount the clone off-screen so html2canvas can render it completely without scroll clipping
+    const wrapper = document.createElement('div')
+    wrapper.style.position = 'absolute'
+    wrapper.style.left = '-9999px'
+    wrapper.style.top = '0'
+    wrapper.appendChild(clone)
+    document.body.appendChild(wrapper)
 
     const opt = {
       margin:       0.5,
       filename:     `${title.replace(/\s+/g, '_')}_Report_Card.pdf`,
-      image:        { type: 'jpeg', quality: 0.98 },
-      html2canvas:  { scale: 2 },
+      image:        { type: 'jpeg', quality: 1 },
+      html2canvas:  { scale: 2, useCORS: true, scrollY: 0 },
       jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
     }
+    
     // @ts-ignore
-    window.html2pdf().set(opt).from(element).save().then(() => {
-        // Revert styles back to dark mode
-        element.style.background = '#1e293b'
-        element.style.color = 'white'
-        ths.forEach(th => {
-            th.style.background = 'rgba(99,102,241,0.1)'
-            th.style.color = '#cbd5e1'
-        })
-        tds.forEach(td => {
-            td.style.color = '#e2e8f0'
-        })
+    window.html2pdf().set(opt).from(clone).save().then(() => {
+        document.body.removeChild(wrapper)
+    }).catch(() => {
+        document.body.removeChild(wrapper)
     })
   }
 
