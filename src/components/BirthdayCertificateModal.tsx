@@ -7,17 +7,37 @@ export function BirthdayCertificateModal({ isOpen, onClose, student, school }: a
   if (!isOpen || !student || !school) return null;
 
   const downloadPDF = () => {
-    const element = document.getElementById(`birthday-certificate-${student.id}`);
-    if (!element) return;
+    const original = document.getElementById(`birthday-certificate-${student.id}`);
+    if (!original) return;
+
+    // Create a clone to render the PDF perfectly without screen size limitations
+    const clone = original.cloneNode(true) as HTMLElement;
+    clone.style.width = '297mm';
+    clone.style.height = '210mm';
+    clone.style.transform = 'none'; // Prevent any screen-scaling on the clone
+    clone.style.margin = '0';
+    
+    const wrapper = document.createElement('div');
+    wrapper.style.position = 'absolute';
+    wrapper.style.left = '-9999px';
+    wrapper.style.top = '0';
+    wrapper.appendChild(clone);
+    document.body.appendChild(wrapper);
+
     const opt = {
       margin: 0,
       filename: `${student.fullName}_Birthday_Certificate.pdf`,
-      image: { type: 'jpeg', quality: 0.98 },
-      html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
+      image: { type: 'jpeg', quality: 1 },
+      html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
     };
+    
     // @ts-ignore
-    window.html2pdf().set(opt).from(element).save();
+    window.html2pdf().set(opt).from(clone).save().then(() => {
+        document.body.removeChild(wrapper);
+    }).catch(() => {
+        document.body.removeChild(wrapper);
+    });
   };
 
   return (
@@ -33,39 +53,42 @@ export function BirthdayCertificateModal({ isOpen, onClose, student, school }: a
     }}>
       <Script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" strategy="lazyOnload" onLoad={() => setIsPdfReady(true)} />
       
-      <div style={{ position: 'relative', maxWidth: '100%', maxHeight: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+      <div style={{ position: 'relative', width: '100%', height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         {/* Close Button */}
         <button 
           onClick={onClose}
           style={{
-            position: 'absolute', top: '-40px', right: '0',
-            background: 'none', border: 'none', color: 'white',
-            fontSize: '30px', cursor: 'pointer'
+            position: 'absolute', top: '10px', right: '10px',
+            background: 'rgba(255,255,255,0.2)', border: 'none', color: 'white',
+            fontSize: '30px', cursor: 'pointer', zIndex: 10, width: '40px', height: '40px', borderRadius: '20px'
           }}
         >
           &times;
         </button>
 
         {/* Certificate Wrapper for PDF */}
-        <div 
-          id={`birthday-certificate-${student.id}`}
-          style={{
-            width: '10in', // approx letter landscape
-            height: '7.5in',
-            background: '#ffffff',
-            backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(243,244,246,1) 100%)',
-            border: `10px solid ${school.themeColor || '#6366f1'}`,
-            padding: '40px',
-            position: 'relative',
-            overflow: 'hidden',
-            fontFamily: 'serif',
-            color: '#1f2937',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            boxSizing: 'border-box'
-          }}
-        >
+        <div style={{ width: '100%', overflow: 'auto', display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px' }}>
+            <div 
+              id={`birthday-certificate-${student.id}`}
+              style={{
+                width: '297mm', // Exact A4 landscape
+                height: '210mm',
+                minWidth: '297mm',
+                minHeight: '210mm',
+                background: '#ffffff',
+                backgroundImage: 'radial-gradient(circle, rgba(255,255,255,1) 0%, rgba(243,244,246,1) 100%)',
+                border: `10px solid ${school.themeColor || '#6366f1'}`,
+                padding: '40px',
+                position: 'relative',
+                overflow: 'hidden',
+                fontFamily: 'serif',
+                color: '#1f2937',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                boxSizing: 'border-box'
+              }}
+            >
           {/* Decorative Corner Ornaments */}
           <div style={{ position: 'absolute', top: '10px', left: '10px', fontSize: '60px', color: school.themeColor || '#6366f1', opacity: 0.2 }}>🎉</div>
           <div style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '60px', color: school.themeColor || '#6366f1', opacity: 0.2 }}>🎉</div>
@@ -109,6 +132,7 @@ export function BirthdayCertificateModal({ isOpen, onClose, student, school }: a
                 Principal
              </div>
           </div>
+        </div>
         </div>
 
         {/* Download Action */}
