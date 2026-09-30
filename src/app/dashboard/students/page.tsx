@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
+import Script from 'next/script'
 import { formatDate, formatCurrency } from '@/lib/utils'
 
 interface Student {
@@ -23,6 +24,10 @@ interface Student {
     penId?: string
     aparId?: string
     samagraId?: string
+    parentEmail?: string
+    parentPassword?: string
+    examResults?: any[]
+    courseSubjects?: string[]
 }
 
 const statusColors: Record<string, string> = {
@@ -42,6 +47,56 @@ export default function StudentsPage() {
     const [isEditing, setIsEditing] = useState(false)
     const [editForm, setEditForm] = useState<any>({})
     const [actionLoading, setActionLoading] = useState(false)
+
+    const downloadPDF = (elementId: string, title: string) => {
+        const original = document.getElementById(elementId)
+        if (!original) return
+
+        const clone = original.cloneNode(true) as HTMLElement
+        clone.style.background = '#ffffff'
+        clone.style.color = '#000000'
+        clone.style.width = '210mm'
+        clone.style.padding = '20mm'
+        clone.style.boxSizing = 'border-box'
+
+        const ths = clone.querySelectorAll('th')
+        ths.forEach(th => {
+          th.style.background = '#f1f5f9'
+          th.style.color = '#000000'
+          th.style.borderColor = '#000000'
+        })
+        const tds = clone.querySelectorAll('td')
+        tds.forEach(td => {
+          if (td.style.color !== 'rgb(16, 185, 129)' && td.style.color !== '#10b981') td.style.color = '#000000'
+          td.style.borderColor = '#000000'
+        })
+        
+        const allEls = clone.querySelectorAll('*')
+        allEls.forEach((el: any) => {
+            const color = el.style.color
+            if (color === 'white' || color === 'rgb(255, 255, 255)' || color === '#94a3b8' || color === 'rgb(148, 163, 184)' || color === '#cbd5e1') el.style.color = '#000000'
+            if (el.style.borderTopColor === '#334155' || el.style.borderTopColor === 'rgb(51, 65, 85)') el.style.borderTopColor = '#000000'
+            if (el.style.borderBottomColor === '#334155' || el.style.borderBottomColor === 'rgb(51, 65, 85)') el.style.borderBottomColor = '#000000'
+        })
+
+        const wrapper = document.createElement('div')
+        wrapper.style.position = 'absolute'
+        wrapper.style.left = '-9999px'
+        wrapper.style.top = '0'
+        wrapper.appendChild(clone)
+        document.body.appendChild(wrapper)
+
+        const opt = {
+          margin: 0,
+          filename: `${title.replace(/\s+/g, '_')}_Report_Card.pdf`,
+          image: { type: 'jpeg', quality: 1 },
+          html2canvas: { scale: 2, useCORS: true, scrollY: 0 },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        }
+        
+        // @ts-ignore
+        window.html2pdf().set(opt).from(clone).save().then(() => document.body.removeChild(wrapper)).catch(() => document.body.removeChild(wrapper))
+    }
 
     const fetchStudents = async () => {
         if (!token) return
@@ -131,6 +186,7 @@ export default function StudentsPage() {
 
     return (
         <div>
+            <Script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js" strategy="lazyOnload" />
             <div className="page-header">
                 <div>
                     <h1 className="page-title">👨‍🎓 Students</h1>
@@ -197,6 +253,7 @@ export default function StudentsPage() {
                                     <th>Student</th>
                                     <th>Class / Section</th>
                                     <th>Phone</th>
+                                    <th>Parent Login</th>
                                     <th>Fee Status</th>
                                     <th>Status</th>
                                     <th>Admission</th>
@@ -227,6 +284,16 @@ export default function StudentsPage() {
                                             <td>
                                                 <div style={{ fontSize: '13px' }}>{s.phone}</div>
                                                 {s.parentPhone && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>P: {s.parentPhone}</div>}
+                                            </td>
+                                            <td>
+                                                {s.parentEmail ? (
+                                                    <div style={{ fontSize: '12px' }}>
+                                                        <div style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{s.parentEmail}</div>
+                                                        <div style={{ color: 'var(--text-muted)' }}>Pass: {s.parentPassword || '***'}</div>
+                                                    </div>
+                                                ) : (
+                                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Not linked</div>
+                                                )}
                                             </td>
                                             <td>
                                                 <div style={{ marginBottom: '4px' }}>
@@ -271,7 +338,7 @@ export default function StudentsPage() {
             {/* Student Detail / Edit Modal */}
             {selectedStudent && (
                 <div className="modal-overlay" onClick={() => { setSelectedStudent(null); setIsEditing(false); }}>
-                    <div className="modal" style={{ maxWidth: isEditing ? '600px' : '500px' }} onClick={e => e.stopPropagation()}>
+                    <div className="modal" style={{ maxWidth: isEditing ? '600px' : '750px' }} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <div className="avatar" style={{ width: '48px', height: '48px', fontSize: '20px' }}>{selectedStudent.fullName.charAt(0)}</div>
@@ -282,7 +349,7 @@ export default function StudentsPage() {
                             </div>
                             <button onClick={() => { setSelectedStudent(null); setIsEditing(false); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}>✕</button>
                         </div>
-                        <div className="modal-body">
+                        <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
                             {isEditing ? (
                                 <form onSubmit={handleUpdate} className="grid-cols-2" style={{ gap: '16px' }}>
                                     <div className="col-span-2">
@@ -347,6 +414,95 @@ export default function StudentsPage() {
                                     ))}
                                 </div>
                             )}
+
+                            {/* Report Cards Section */}
+                            {!isEditing && selectedStudent.examResults && selectedStudent.examResults.length > 0 && (
+                                <div style={{ marginTop: '24px', borderTop: '1px solid var(--border)', paddingTop: '20px' }}>
+                                    <h4 style={{ fontWeight: '700', marginBottom: '16px' }}>📑 Student Report Cards</h4>
+                                    {Object.entries(
+                                        selectedStudent.examResults.reduce((acc: any, er: any) => {
+                                            const title = er.exam?.title || 'Unknown Exam'
+                                            if (!acc[title]) acc[title] = []
+                                            acc[title].push(er)
+                                            return acc
+                                        }, {})
+                                    ).map(([examTitle, results]: any, index) => {
+                                        let grandTotalMax = 0
+                                        let grandTotalObtained = 0
+                                        const courseSubjects = selectedStudent.courseSubjects || []
+                                        
+                                        const subjectRows = courseSubjects.map((subject: string) => {
+                                            const res = results.find((r: any) => r.exam?.subject === subject)
+                                            if (res) {
+                                                grandTotalMax += res.exam?.maxMarks || 0
+                                                grandTotalObtained += res.marksObtained || 0
+                                            }
+                                            return { subject, max: res ? res.exam?.maxMarks : '-', obtained: res ? res.marksObtained : '-', remarks: res?.remarks || '-' }
+                                        })
+                                        results.forEach((r: any) => {
+                                            if (r.exam?.subject && !courseSubjects.includes(r.exam.subject)) {
+                                                grandTotalMax += r.exam?.maxMarks || 0
+                                                grandTotalObtained += r.marksObtained || 0
+                                                subjectRows.push({ subject: r.exam.subject, max: r.exam.maxMarks, obtained: r.marksObtained, remarks: r.remarks || '-' })
+                                            }
+                                        })
+                                        const percentage = grandTotalMax > 0 ? ((grandTotalObtained / grandTotalMax) * 100).toFixed(2) : 0
+                                        const reportCardId = `report-card-${index}`
+
+                                        return (
+                                            <div key={examTitle} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
+                                                <div id={reportCardId} style={{ padding: '24px', background: '#1e293b', color: 'white' }}>
+                                                    <div style={{ textAlign: 'center', marginBottom: '24px', borderBottom: '2px solid #334155', paddingBottom: '16px' }}>
+                                                        <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '800' }}>School Admin Report</h2>
+                                                        <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '600', color: '#10b981' }}>{examTitle}</h3>
+                                                    </div>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '14px' }}>
+                                                        <div>
+                                                            <p style={{ margin: '4px 0' }}><strong>Student:</strong> {selectedStudent.fullName}</p>
+                                                            <p style={{ margin: '4px 0' }}><strong>Class:</strong> {selectedStudent.courseName}</p>
+                                                        </div>
+                                                        <div style={{ textAlign: 'right' }}>
+                                                            <p style={{ margin: '4px 0' }}><strong>Section:</strong> {selectedStudent.batchName}</p>
+                                                            <p style={{ margin: '4px 0' }}><strong>ID:</strong> {selectedStudent.studentId || 'N/A'}</p>
+                                                        </div>
+                                                    </div>
+                                                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px', border: '1px solid #334155' }}>
+                                                        <thead>
+                                                            <tr style={{ background: 'rgba(99,102,241,0.1)' }}>
+                                                                <th style={{ padding: '10px', border: '1px solid #334155', textAlign: 'left', color: '#cbd5e1', fontSize: '12px' }}>Subject</th>
+                                                                <th style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center', color: '#cbd5e1', fontSize: '12px' }}>Max</th>
+                                                                <th style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center', color: '#cbd5e1', fontSize: '12px' }}>Obtained</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {subjectRows.map((row: any, i: number) => (
+                                                                <tr key={i}>
+                                                                    <td style={{ padding: '10px', border: '1px solid #334155', fontSize: '13px', fontWeight: '600' }}>{row.subject}</td>
+                                                                    <td style={{ padding: '10px', border: '1px solid #334155', fontSize: '13px', textAlign: 'center' }}>{row.max}</td>
+                                                                    <td style={{ padding: '10px', border: '1px solid #334155', fontSize: '13px', textAlign: 'center', fontWeight: '700', color: row.obtained !== '-' ? '#10b981' : 'inherit' }}>{row.obtained}</td>
+                                                                </tr>
+                                                            ))}
+                                                        </tbody>
+                                                        <tfoot>
+                                                            <tr style={{ background: 'rgba(16,185,129,0.1)' }}>
+                                                                <td style={{ padding: '10px', border: '1px solid #334155', fontWeight: '800', textAlign: 'right', fontSize: '13px' }}>TOTAL ({percentage}%)</td>
+                                                                <td style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center', fontWeight: '800', fontSize: '13px' }}>{grandTotalMax}</td>
+                                                                <td style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center', fontWeight: '800', color: '#10b981', fontSize: '13px' }}>{grandTotalObtained}</td>
+                                                            </tr>
+                                                        </tfoot>
+                                                    </table>
+                                                </div>
+                                                <div style={{ padding: '12px', background: '#0f172a', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end' }}>
+                                                    <button onClick={() => downloadPDF(reportCardId, `${selectedStudent.fullName}_${examTitle}`)} className="btn btn-secondary btn-sm" style={{ background: '#ef4444', color: 'white', border: 'none' }}>
+                                                        📄 Download PDF
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+                            )}
+
                         </div>
                         {!isEditing && (
                             <div className="modal-footer">

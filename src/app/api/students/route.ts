@@ -29,8 +29,10 @@ export async function GET(req: NextRequest) {
         const students = await prisma.student.findMany({
             where,
             include: {
-                course: { select: { name: true } },
-                batch: { select: { name: true } }
+                course: { select: { name: true, subjects: true } },
+                batch: { select: { name: true } },
+                parentLinks: { include: { user: { select: { email: true, plainPassword: true } } } },
+                examResults: { include: { exam: true } }
             },
             orderBy: { createdAt: 'desc' }
         })
@@ -38,7 +40,10 @@ export async function GET(req: NextRequest) {
         const data = students.map(s => ({
             ...s,
             courseName: s.course.name,
+            courseSubjects: s.course.subjects || [],
             batchName: s.batch.name,
+            parentEmail: s.parentLinks?.[0]?.user?.email || null,
+            parentPassword: s.parentLinks?.[0]?.user?.plainPassword || null,
         }))
 
         // Total count for plan limit
