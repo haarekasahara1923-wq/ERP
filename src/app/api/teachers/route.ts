@@ -78,3 +78,52 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to create teacher' }, { status: 500 })
     }
 }
+
+export async function PATCH(req: NextRequest) {
+    const { error, user } = requireWriteAccess(req)
+    if (error) return error
+
+    try {
+        const body = await req.json()
+        const { id, name, email, phone, subject, salary, joinDate, isActive } = body
+
+        if (!id) return NextResponse.json({ error: 'Teacher ID is required' }, { status: 400 })
+
+        const teacher = await prisma.teacher.update({
+            where: { id, tenantId: user!.tenantId },
+            data: {
+                name,
+                email,
+                phone,
+                subject: Array.isArray(subject) ? subject : subject ? [subject] : undefined,
+                salary: salary !== undefined ? parseFloat(salary) : undefined,
+                joinDate: joinDate ? new Date(joinDate) : undefined,
+                isActive: isActive !== undefined ? isActive : undefined,
+            }
+        })
+
+        return NextResponse.json({ success: true, data: teacher })
+    } catch (err) {
+        console.error('Update teacher error:', err)
+        return NextResponse.json({ error: 'Failed to update teacher' }, { status: 500 })
+    }
+}
+
+export async function DELETE(req: NextRequest) {
+    const { error, user } = requireWriteAccess(req)
+    if (error) return error
+
+    try {
+        const { id } = Object.fromEntries(new URL(req.url).searchParams.entries())
+        if (!id) return NextResponse.json({ error: 'Teacher ID is required' }, { status: 400 })
+
+        await prisma.teacher.delete({
+            where: { id, tenantId: user!.tenantId }
+        })
+
+        return NextResponse.json({ success: true, message: 'Teacher deleted' })
+    } catch (err) {
+        console.error('Delete teacher error:', err)
+        return NextResponse.json({ error: 'Failed to delete teacher' }, { status: 500 })
+    }
+}
