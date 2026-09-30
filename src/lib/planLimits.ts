@@ -57,8 +57,8 @@ export const PLAN_CONFIGS: Record<PlanType, PlanConfig> = {
         displayName: 'Basic',
         price: 999,
         limits: {
-            maxStudents: 100,
-            maxTeachers: 2,
+            maxStudents: -1,
+            maxTeachers: -1,
             maxBranches: 1,
             maxMockTests: 5,
             maxAIQuestions: 0,       // Not available in basic

@@ -47,6 +47,9 @@ export default function TeachersPage() {
             setShowAdd(false)
             fetchTeachers()
             setTimeout(() => setToast(''), 3000)
+        } else {
+            setToast(data.error || 'Failed to add teacher')
+            setTimeout(() => setToast(''), 3000)
         }
     }
 
