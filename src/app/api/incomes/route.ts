@@ -18,11 +18,11 @@ export async function GET(req: NextRequest) {
             if (from) where.date.gte = dayStart(from)
             if (to) where.date.lte = dayEnd(to)
         }
-        const expenses = await prisma.expense.findMany({ where, orderBy: { date: 'desc' } })
-        return NextResponse.json({ success: true, data: expenses })
+        const incomes = await prisma.income.findMany({ where, orderBy: { date: 'desc' } })
+        return NextResponse.json({ success: true, data: incomes })
     } catch (err) {
-        console.error('Fetch expenses error:', err)
-        return NextResponse.json({ error: 'Failed to fetch expenses' }, { status: 500 })
+        console.error('Fetch incomes error:', err)
+        return NextResponse.json({ error: 'Failed to fetch income records' }, { status: 500 })
     }
 }
 
@@ -31,31 +31,29 @@ export async function POST(req: NextRequest) {
     if (error) return error
 
     try {
-        const body = await req.json()
-        const { category, amount, date, description, paidTo, mode, reference } = body
-
+        const { category, amount, date, mode, receivedFrom, reference, description } = await req.json()
         if (!category || !amount || !date) {
             return NextResponse.json({ error: 'Category, amount and date are required' }, { status: 400 })
         }
         const amt = parseFloat(amount)
         if (!(amt > 0)) return NextResponse.json({ error: 'Amount must be greater than 0' }, { status: 400 })
 
-        const expense = await prisma.expense.create({
+        const income = await prisma.income.create({
             data: {
                 tenantId: user!.tenantId,
                 category,
                 amount: amt,
                 date: dayStart(String(date).slice(0, 10)),
-                description: description || '',
-                paidTo: paidTo || '',
                 mode: mode || 'CASH',
+                receivedFrom: receivedFrom || '',
                 reference: reference || '',
+                description: description || '',
             }
         })
-        return NextResponse.json({ success: true, data: expense }, { status: 201 })
+        return NextResponse.json({ success: true, data: income }, { status: 201 })
     } catch (err) {
-        console.error('Create expense error:', err)
-        return NextResponse.json({ error: 'Failed to create expense' }, { status: 500 })
+        console.error('Create income error:', err)
+        return NextResponse.json({ error: 'Failed to create income record' }, { status: 500 })
     }
 }
 
@@ -64,29 +62,27 @@ export async function PATCH(req: NextRequest) {
     if (error) return error
 
     try {
-        const body = await req.json()
-        const { id, category, amount, date, description, paidTo, mode, reference } = body
-        if (!id) return NextResponse.json({ error: 'Expense ID is required' }, { status: 400 })
+        const { id, category, amount, date, mode, receivedFrom, reference, description } = await req.json()
+        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+        const existing = await prisma.income.findFirst({ where: { id, tenantId: user!.tenantId } })
+        if (!existing) return NextResponse.json({ error: 'Record not found' }, { status: 404 })
 
-        const existing = await prisma.expense.findFirst({ where: { id, tenantId: user!.tenantId } })
-        if (!existing) return NextResponse.json({ error: 'Expense not found' }, { status: 404 })
-
-        const expense = await prisma.expense.update({
+        const income = await prisma.income.update({
             where: { id },
             data: {
                 category: category ?? undefined,
                 amount: amount !== undefined ? parseFloat(amount) : undefined,
                 date: date ? dayStart(String(date).slice(0, 10)) : undefined,
-                description: description ?? undefined,
-                paidTo: paidTo ?? undefined,
                 mode: mode ?? undefined,
+                receivedFrom: receivedFrom ?? undefined,
                 reference: reference ?? undefined,
+                description: description ?? undefined,
             }
         })
-        return NextResponse.json({ success: true, data: expense })
+        return NextResponse.json({ success: true, data: income })
     } catch (err) {
-        console.error('Update expense error:', err)
-        return NextResponse.json({ error: 'Failed to update expense' }, { status: 500 })
+        console.error('Update income error:', err)
+        return NextResponse.json({ error: 'Failed to update income record' }, { status: 500 })
     }
 }
 
@@ -96,12 +92,12 @@ export async function DELETE(req: NextRequest) {
 
     try {
         const id = new URL(req.url).searchParams.get('id')
-        if (!id) return NextResponse.json({ error: 'Expense ID is required' }, { status: 400 })
-        const result = await prisma.expense.deleteMany({ where: { id, tenantId: user!.tenantId } })
-        if (!result.count) return NextResponse.json({ error: 'Expense not found' }, { status: 404 })
+        if (!id) return NextResponse.json({ error: 'ID is required' }, { status: 400 })
+        const result = await prisma.income.deleteMany({ where: { id, tenantId: user!.tenantId } })
+        if (!result.count) return NextResponse.json({ error: 'Record not found' }, { status: 404 })
         return NextResponse.json({ success: true })
     } catch (err) {
-        console.error('Delete expense error:', err)
-        return NextResponse.json({ error: 'Failed to delete expense' }, { status: 500 })
+        console.error('Delete income error:', err)
+        return NextResponse.json({ error: 'Failed to delete income record' }, { status: 500 })
     }
 }

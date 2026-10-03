@@ -2,14 +2,33 @@ import { NextRequest, NextResponse } from 'next/server'
 export const dynamic = 'force-dynamic'
 import { requireAuth, requireWriteAccess } from '@/app/api/middleware'
 import { prisma } from '@/lib/prisma'
+import { dayStart, dayEnd, todayIST } from '@/lib/accounts'
+
+/** Convert YYYY-MM-DD into a timestamp; today's date keeps the current time */
+function paymentDate(date?: string): Date | undefined {
+    if (!date) return undefined
+    const d = String(date).slice(0, 10)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(d)) return undefined
+    if (d === todayIST()) return new Date()
+    return new Date(`${d}T12:00:00.000+05:30`)
+}
 
 export async function GET(req: NextRequest) {
     const { error, user } = requireAuth(req)
     if (error) return error
 
     try {
+        const sp = new URL(req.url).searchParams
+        const from = sp.get('from')
+        const to = sp.get('to')
+        const where: any = { tenantId: user!.tenantId }
+        if (from || to) {
+            where.createdAt = {}
+            if (from) where.createdAt.gte = dayStart(from)
+            if (to) where.createdAt.lte = dayEnd(to)
+        }
         const payments = await prisma.payment.findMany({
-            where: { tenantId: user!.tenantId },
+            where,
             include: { student: { select: { fullName: true } } },
             orderBy: { createdAt: 'desc' }
         })
@@ -32,7 +51,7 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json()
-        const { studentId, feeId, amount, mode, reference, receivedBy, notes } = body
+        const { studentId, feeId, amount, mode, reference, receivedBy, notes, date } = body
 
         if (!studentId || !amount) {
             return NextResponse.json({ error: 'Student ID and amount are required' }, { status: 400 })
@@ -50,6 +69,7 @@ export async function POST(req: NextRequest) {
                     reference: reference || '',
                     receivedBy: receivedBy || '',
                     notes: notes || '',
+                    ...(paymentDate(date) ? { createdAt: paymentDate(date) } : {}),
                 }
             })
 
@@ -91,7 +111,7 @@ export async function PATCH(req: NextRequest) {
 
     try {
         const body = await req.json()
-        const { id, amount, mode, reference, notes } = body
+        const { id, amount, mode, reference, notes, date } = body
 
         if (!id) return NextResponse.json({ error: 'Payment ID is required' }, { status: 400 })
 
@@ -110,6 +130,7 @@ export async function PATCH(req: NextRequest) {
                     mode: mode as any,
                     reference,
                     notes,
+                    ...(paymentDate(date) ? { createdAt: paymentDate(date) } : {}),
                 }
             })
 

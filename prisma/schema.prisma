@@ -61,6 +61,7 @@ model Tenant {
   questions           Question[]
   results             Result[]
   expenses            Expense[]
+  incomes             Income[]
   leads               Lead[]
   chatMessages        ChatMessage[]
   subscriptions       Subscription[]
@@ -82,6 +83,10 @@ model Tenant {
   ifscCode         String?
   totalEarnings    Float   @default(0)
   availableBalance Float   @default(0)
+
+  // School Accounts / Ledger
+  ledgerOpeningBalance Float     @default(0)
+  ledgerOpeningDate    DateTime?
 
   affiliateOrders GyankoshOrder[]       @relation("TenantAffiliateOrders")
   withdrawals     AffiliateWithdrawal[]
@@ -582,12 +587,35 @@ model Expense {
   description String?
   paidTo      String?
   receipt     String?
+  mode        String?  @default("CASH")
+  reference   String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
   tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
 
   @@index([tenantId])
+  @@index([tenantId, date])
+}
+
+// Non-fee receipts / other income (donations, grants, misc receipts)
+model Income {
+  id           String   @id @default(cuid())
+  tenantId     String
+  category     String
+  amount       Float
+  date         DateTime
+  mode         String?  @default("CASH")
+  receivedFrom String?
+  reference    String?
+  description  String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([tenantId, date])
 }
 
 model Lead {

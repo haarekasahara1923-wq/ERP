@@ -33,8 +33,10 @@ const navItems = [
         group: 'FINANCE', items: [
             { href: '/dashboard/fees', icon: '💰', label: 'Fee Management' },
             { href: '/dashboard/reports/fee-ledger', icon: '📒', label: 'Fee Ledger' },
-            { href: '/dashboard/payments', icon: '💳', label: 'Payments' },
+            { href: '/dashboard/payments', icon: '💳', label: 'Payments / Receipts' },
             { href: '/dashboard/expenses', icon: '📉', label: 'Expenses' },
+            { href: '/dashboard/accounts/ledger', icon: '📗', label: 'School Ledger' },
+            { href: '/dashboard/accounts/pnl', icon: '📊', label: 'P&L Account' },
         ]
     },
     {

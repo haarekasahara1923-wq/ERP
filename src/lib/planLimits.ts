@@ -211,6 +211,8 @@ export const NAV_FEATURE_MAP: Record<string, keyof PlanFeatures | null> = {
     '/dashboard/fees': null,         // fee management - always available
     '/dashboard/payments': null,     // fee management - always available
     '/dashboard/expenses': null,     // Basic expense tracking
+    '/dashboard/accounts/ledger': null, // School cash-book / ledger
+    '/dashboard/accounts/pnl': null,    // Profit & Loss account
     '/dashboard/attendance': null,   // Basic attendance - always available
     '/dashboard/profile': null,      // Always available
     '/dashboard/subscription': null, // Always available

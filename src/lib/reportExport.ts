@@ -28,6 +28,39 @@ export function downloadCSV(filename: string, content: string | (string | number
     URL.revokeObjectURL(url)
 }
 
+/**
+ * Download an Excel-compatible workbook (.xls, SpreadsheetML via HTML tables).
+ * Opens natively in MS Excel / LibreOffice / Google Sheets with formatting.
+ */
+export function downloadExcel(
+    filename: string,
+    sheets: { title?: string; headerLines?: string[]; headers: string[]; rows: (string | number)[][]; footer?: (string | number)[] }[]
+) {
+    const esc = (v: any) => String(v ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    const cell = (v: any, tag = 'td', style = '') => {
+        const isNum = typeof v === 'number'
+        return `<${tag} style="border:1px solid #cbd5e1;padding:4px 8px;${isNum ? 'mso-number-format:\\#\\,\\#\\#0\\.00;text-align:right;' : ''}${style}">${esc(v)}</${tag}>`
+    }
+    const body = sheets.map(s => `
+        ${s.title ? `<h3 style="font-family:Calibri;color:#0f3d26">${esc(s.title)}</h3>` : ''}
+        ${(s.headerLines || []).map(l => `<div style="font-family:Calibri">${esc(l)}</div>`).join('')}
+        <table style="border-collapse:collapse;font-family:Calibri;font-size:11pt">
+            <thead><tr>${s.headers.map(h => cell(h, 'th', 'background:#1a5c38;color:#fff;font-weight:bold;')).join('')}</tr></thead>
+            <tbody>${s.rows.map(r => `<tr>${r.map(c => cell(c)).join('')}</tr>`).join('')}</tbody>
+            ${s.footer ? `<tfoot><tr>${s.footer.map(c => cell(c, 'td', 'font-weight:bold;background:#ecfdf5;')).join('')}</tr></tfoot>` : ''}
+        </table><br/>`).join('')
+    const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"/></head><body>${body}</body></html>`
+    const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename.endsWith('.xls') ? filename : `${filename}.xls`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+}
+
 export interface ReportPDFStat {
     label: string
     value: string | number
