@@ -38,7 +38,7 @@ const statusColors: Record<string, string> = {
 }
 
 export default function StudentsPage() {
-    const { token, user } = useAuth()
+    const { token, user, handleUnauthorized } = useAuth()
     const canEditOrDelete = user?.role === 'SUPER_ADMIN' || user?.role === 'COACHING_ADMIN'
     const [students, setStudents] = useState<Student[]>([])
     const [loading, setLoading] = useState(true)
@@ -117,6 +117,7 @@ export default function StudentsPage() {
                 headers: { Authorization: `Bearer ${token}` }
             })
             const data = await res.json()
+            if (res.status === 401 || data?.error === 'Unauthorized') { handleUnauthorized(); return }
             if (data.success) {
                 alert('Student deleted successfully')
                 fetchStudents()
@@ -142,6 +143,7 @@ export default function StudentsPage() {
                 body: JSON.stringify(editForm)
             })
             const data = await res.json()
+            if (res.status === 401 || data?.error === 'Unauthorized') { handleUnauthorized(); return }
             if (data.success) {
                 alert('Student updated successfully')
                 setIsEditing(false)

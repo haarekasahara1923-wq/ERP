@@ -37,6 +37,7 @@ interface AuthContextType {
     token: string | null
     login: (email: string, password: string, role?: string, tenantId?: string) => Promise<{ success: boolean; error?: string }>
     logout: () => void
+    handleUnauthorized: () => void
     isLoading: boolean
 }
 
@@ -114,8 +115,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         window.location.href = '/login'
     }
 
+    // Call this when any API returns 401 — clears stale token and redirects to login
+    const handleUnauthorized = () => {
+        setUser(null)
+        setTenant(null)
+        setSubscription(null)
+        setToken(null)
+        localStorage.removeItem('scalevo_token')
+        localStorage.removeItem('scalevo_user')
+        localStorage.removeItem('scalevo_tenant')
+        localStorage.removeItem('scalevo_subscription')
+        localStorage.removeItem('scalevo_refresh')
+        localStorage.removeItem('udba_token')
+        localStorage.removeItem('udba_user')
+        localStorage.removeItem('udba_tenant')
+        localStorage.removeItem('udba_subscription')
+        localStorage.removeItem('udba_refresh')
+        window.location.href = '/login'
+    }
+
     return (
-        <AuthContext.Provider value={{ user, tenant, subscription, token, login, logout, isLoading }}>
+        <AuthContext.Provider value={{ user, tenant, subscription, token, login, logout, handleUnauthorized, isLoading }}>
             {children}
         </AuthContext.Provider>
     )

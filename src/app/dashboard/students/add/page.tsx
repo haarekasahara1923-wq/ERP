@@ -11,7 +11,7 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 )
 
 export default function AddStudentPage() {
-    const { token } = useAuth()
+    const { token, handleUnauthorized } = useAuth()
     const router = useRouter()
     const [courses, setCourses] = useState<{ id: string; name: string; fees: number; installmentCount: number }[]>([])
     const [batches, setBatches] = useState<{ id: string; name: string; courseId: string }[]>([])
@@ -61,6 +61,9 @@ export default function AddStudentPage() {
             setSuccess(true)
             setToast('Student added successfully!')
             setTimeout(() => router.push('/dashboard/students'), 1500)
+        } else if (res.status === 401 || data?.error === 'Unauthorized') {
+            // Token expired or invalid — clear and redirect to login
+            handleUnauthorized()
         } else {
             setToast(data.error || 'Failed to add student')
         }

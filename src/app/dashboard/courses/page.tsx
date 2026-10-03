@@ -11,7 +11,7 @@ const CLASS_OPTIONS = [
 const SECTION_OPTIONS = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 
 export default function ClassesPage() {
-    const { token } = useAuth()
+    const { token, handleUnauthorized } = useAuth()
     const [courses, setCourses] = useState<{ id: string; name: string; description: string; duration: string; fees: number; subjects: string[]; installmentCount: number; isActive: boolean }[]>([])
     const [batches, setBatches] = useState<{ id: string; name: string; courseId: string; courseName: string; startTime: string; endTime: string; capacity: number; studentCount: number }[]>([])
     const [loading, setLoading] = useState(true)
@@ -22,6 +22,15 @@ export default function ClassesPage() {
     const [batchForm, setBatchForm] = useState({ id: '', name: '', courseId: '', section: 'A', capacity: '40' })
     const [saving, setSaving] = useState(false)
     const [toast, setToast] = useState('')
+
+    // Auto-redirect to login on 401 (expired/invalid token)
+    const handleApiError = (data: any, status: number) => {
+        if (status === 401 || data?.error === 'Unauthorized') {
+            handleUnauthorized()
+            return
+        }
+        alert(data?.error || 'Something went wrong')
+    }
 
     const fetchData = async () => {
         if (!token) return
@@ -53,7 +62,7 @@ export default function ClassesPage() {
             setCourseForm({ id: '', name: '', description: '', duration: '', fees: '', subjects: '', installmentCount: '1' })
             fetchData()
             setTimeout(() => setToast(''), 3000)
-        } else { alert(data.error) }
+        } else { handleApiError(data, res.status) }
     }
 
     const handleAddBatch = async (e: React.FormEvent) => {
@@ -82,7 +91,7 @@ export default function ClassesPage() {
             setBatchForm({ id: '', name: '', courseId: '', section: 'A', capacity: '40' })
             fetchData()
             setTimeout(() => setToast(''), 3000)
-        } else { alert(data.error) }
+        } else { handleApiError(data, res.status) }
     }
 
     const handleDelete = async (type: 'course' | 'batch', id: string) => {
@@ -93,7 +102,7 @@ export default function ClassesPage() {
         })
         const data = await res.json()
         if (data.success) fetchData()
-        else alert(data.error)
+        else handleApiError(data, res.status)
     }
 
     const openEditCourse = (c: any) => {

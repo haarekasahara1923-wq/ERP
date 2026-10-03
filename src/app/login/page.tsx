@@ -42,14 +42,16 @@ function LoginForm() {
     setLoading(true)
     setError('')
 
-    const isSchoolRole = !['SUPER_ADMIN'].includes(role)
-    const tenantId = isSchoolRole ? SCHOOL_TENANT_ID : undefined
+    // SUPER_ADMIN and all school roles must be scoped to the school tenant
+    // so their JWT tenantId matches the actual school data in the DB
+    const tenantId = SCHOOL_TENANT_ID || undefined
 
     const result = await login(identifier, password, role, tenantId)
     setLoading(false)
 
     if (result.success) {
-      const storedUser = localStorage.getItem('udba_user')
+      // Read from scalevo_user (current key); udba_user is legacy and no longer written
+      const storedUser = localStorage.getItem('scalevo_user')
       if (storedUser) redirectByRole(JSON.parse(storedUser).role)
       else router.push('/dashboard')
     } else {
