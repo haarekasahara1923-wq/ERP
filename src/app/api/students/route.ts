@@ -86,7 +86,12 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json()
-        const { fullName, phone, courseId, batchId, fatherName, motherName, parentPhone, email, address, gender, dob, admissionDate, feePlan, totalFee, notes, aadhaarNo, penId, aparId, samagraId } = body
+        const { 
+            fullName, phone, courseId, batchId, fatherName, motherName, parentPhone, email, address, gender, dob, 
+            admissionDate, feePlan, totalFee, notes, aadhaarNo, penId, aparId, samagraId,
+            scholarNo, caste, dobInWords, medium, firstAdmissionClass, firstAdmissionDate, scholarshipScheme, 
+            bankName, bankAccountNo, ifsc 
+        } = body
 
         if (!fullName || !phone || !courseId || !batchId) {
             return NextResponse.json({ error: 'Required fields missing' }, { status: 400 })
@@ -125,6 +130,16 @@ export async function POST(req: NextRequest) {
                 penId: penId || '',
                 aparId: aparId || '',
                 samagraId: samagraId || '',
+                scholarNo: scholarNo || '',
+                caste: caste || '',
+                dobInWords: dobInWords || '',
+                medium: medium || '',
+                firstAdmissionClass: firstAdmissionClass || '',
+                firstAdmissionDate: firstAdmissionDate ? new Date(firstAdmissionDate) : null,
+                scholarshipScheme: scholarshipScheme || '',
+                bankName: bankName || '',
+                bankAccountNo: bankAccountNo || '',
+                ifsc: ifsc || '',
             }
         })
 
