@@ -130,9 +130,9 @@ export default function GenerateTCPage() {
                         </div>
                     )}
                     <div>
-                        <label className="form-label">Student</label>
+                        <label className="form-label">Scholar No.</label>
                         <select className="form-select" value={selectedStudentId} onChange={e => setSelectedStudentId(e.target.value)} disabled={!students.length}>
-                            <option value="">{students.length ? 'Select Student' : 'No Students Found'}</option>
+                            <option value="">{students.length ? 'Select Scholar No.' : 'No Students Found'}</option>
                             {students.map(s => <option key={s.id} value={s.id}>{s.fullName} ({s.scholarNo || 'N/A'})</option>)}
                         </select>
                     </div>
