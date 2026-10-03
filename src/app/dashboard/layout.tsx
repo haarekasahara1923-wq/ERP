@@ -19,6 +19,7 @@ const navItems = [
             { href: '/dashboard/courses', icon: '🏫', label: 'Classes & Batches' },
             { href: '/dashboard/students', icon: '👨‍🎓', label: 'All Students' },
             { href: '/dashboard/students/add', icon: '➕', label: 'Add Student' },
+            { href: '/dashboard/students/tc', icon: '📄', label: 'Generate TC' },
             { href: '/dashboard/attendance', icon: '✅', label: 'Attendance' },
         ]
     },
@@ -62,6 +63,7 @@ const adminOperationNav = [
             { href: '/dashboard/courses', icon: '🏫', label: 'Classes & Batches' },
             { href: '/dashboard/students', icon: '👨‍🎓', label: 'All Students' },
             { href: '/dashboard/students/add', icon: '➕', label: 'Add Student' },
+            { href: '/dashboard/students/tc', icon: '📄', label: 'Generate TC' },
             { href: '/dashboard/attendance', icon: '✅', label: 'Attendance' },
         ]
     },
@@ -195,6 +197,7 @@ function DashboardHeader({ onMenuClick, onAiOpen }: { onMenuClick: () => void; o
             '/dashboard/analytics': 'Analytics',
             '/dashboard/students': 'Students',
             '/dashboard/students/add': 'Add Student',
+            '/dashboard/students/tc': 'Transfer Certificate',
             '/dashboard/attendance': 'Attendance',
             '/dashboard/courses': 'Classes & Batches',
             '/dashboard/mock-tests': 'Mock Tests',
