@@ -4,8 +4,7 @@ import { useAuth, useApi } from '@/contexts/AuthContext'
 import html2pdf from 'html2pdf.js'
 
 export default function GenerateTCPage() {
-    const { tenant, token } = useAuth()
-    const { fetcher } = useApi()
+    const { tenant, token, handleUnauthorized } = useAuth()
 
     const [courses, setCourses] = useState<any[]>([])
     const [batches, setBatches] = useState<any[]>([])
@@ -31,17 +30,20 @@ export default function GenerateTCPage() {
 
     useEffect(() => {
         if (!token) return;
-        fetcher('/api/courses').then(res => {
-            if (res.success) setCourses(res.data)
-        })
-        fetcher('/api/batches').then(res => {
-            if (res.success) setBatches(res.data)
-        })
+        Promise.all([
+            fetch('/api/courses', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+            fetch('/api/batches', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+        ]).then(([c, b]) => {
+            if (c.success) setCourses(c.data)
+            if (b.success) setBatches(b.data)
+        }).catch(console.error)
     }, [token])
 
     useEffect(() => {
-        if (selectedCourseId && selectedBatchId) {
-            fetcher(`/api/students?courseId=${selectedCourseId}&batchId=${selectedBatchId}`).then(res => {
+        if (selectedCourseId && selectedBatchId && token) {
+            fetch(`/api/students?courseId=${selectedCourseId}&batchId=${selectedBatchId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            }).then(r => r.json()).then(res => {
                 if (res.success) {
                     let filtered = res.data;
                     const course = courses.find(c => c.id === selectedCourseId)
@@ -53,9 +55,9 @@ export default function GenerateTCPage() {
                     setSelectedStudentId('')
                     setStudentData(null)
                 }
-            })
+            }).catch(console.error)
         }
-    }, [selectedCourseId, selectedBatchId, selectedSubjectGroup])
+    }, [selectedCourseId, selectedBatchId, selectedSubjectGroup, token, courses])
 
     useEffect(() => {
         if (selectedStudentId) {
