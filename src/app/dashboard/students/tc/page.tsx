@@ -9,6 +9,8 @@ export default function GenerateTCPage() {
     const [courses, setCourses] = useState<any[]>([])
     const [batches, setBatches] = useState<any[]>([])
     const [students, setStudents] = useState<any[]>([])
+    const [errorMsg, setErrorMsg] = useState<string>('')
+    const [debugInfo, setDebugInfo] = useState<string>('')
 
     const [selectedCourseId, setSelectedCourseId] = useState('')
     const [selectedBatchId, setSelectedBatchId] = useState('')
@@ -30,20 +32,42 @@ export default function GenerateTCPage() {
 
     useEffect(() => {
         if (!token) return;
+        setDebugInfo('Fetching data...');
         Promise.all([
-            fetch('/api/courses', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
-            fetch('/api/batches', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()),
+            fetch('/api/courses', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
+                .then(r => {
+                    if (!r.ok) throw new Error(`Courses HTTP ${r.status}`);
+                    return r.json();
+                }),
+            fetch('/api/batches', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
+                .then(r => {
+                    if (!r.ok) throw new Error(`Batches HTTP ${r.status}`);
+                    return r.json();
+                }),
         ]).then(([c, b]) => {
+            setDebugInfo(`Courses API success: ${c.success}, Batches API success: ${b.success}`);
             if (c.success) setCourses(c.data)
+            else setErrorMsg(`Courses Error: ${c.error}`)
+            
             if (b.success) setBatches(b.data)
-        }).catch(console.error)
+            else setErrorMsg(prev => prev + ` Batches Error: ${b.error}`)
+        }).catch(err => {
+            console.error(err)
+            setErrorMsg(`Network Error: ${err.message}`)
+            setDebugInfo('Fetch failed completely');
+        })
     }, [token])
 
     useEffect(() => {
         if (selectedCourseId && selectedBatchId && token) {
+            setDebugInfo('Fetching students...');
             fetch(`/api/students?courseId=${selectedCourseId}&batchId=${selectedBatchId}`, {
-                headers: { Authorization: `Bearer ${token}` }
-            }).then(r => r.json()).then(res => {
+                headers: { Authorization: `Bearer ${token}` },
+                cache: 'no-store'
+            }).then(r => {
+                if (!r.ok) throw new Error(`Students HTTP ${r.status}`);
+                return r.json();
+            }).then(res => {
                 if (res.success) {
                     let filtered = res.data;
                     const course = courses.find(c => c.id === selectedCourseId)
@@ -54,8 +78,14 @@ export default function GenerateTCPage() {
                     setStudents(filtered)
                     setSelectedStudentId('')
                     setStudentData(null)
+                    setDebugInfo(`Students loaded: ${filtered.length}`);
+                } else {
+                    setErrorMsg(`Students Error: ${res.error}`);
                 }
-            }).catch(console.error)
+            }).catch(err => {
+                console.error(err);
+                setErrorMsg(`Students Network Error: ${err.message}`);
+            })
         }
     }, [selectedCourseId, selectedBatchId, selectedSubjectGroup, token, courses])
 
@@ -101,6 +131,17 @@ export default function GenerateTCPage() {
         <div style={{ padding: '24px', maxWidth: '1200px', margin: '0 auto' }}>
             <h1 style={{ marginBottom: '24px', fontSize: '24px', fontWeight: '600' }}>Generate Transfer Certificate (TC)</h1>
             
+            {errorMsg && (
+                <div style={{ padding: '16px', background: '#fee2e2', color: '#991b1b', borderRadius: '8px', marginBottom: '24px', fontWeight: 'bold' }}>
+                    ⚠️ {errorMsg}
+                </div>
+            )}
+            
+            {/* DEBUG INFO (Remove before production if desired, but good for troubleshooting) */}
+            <div style={{ fontSize: '12px', color: '#666', marginBottom: '16px' }}>
+                Status: {debugInfo} | Courses: {courses.length} | Batches: {batches.length} | Students: {students.length}
+            </div>
+
             <div className="card" style={{ padding: '20px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                     <div>
