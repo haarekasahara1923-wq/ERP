@@ -230,17 +230,18 @@ export default function GenerateTCPage() {
             {/* TC PREVIEW */}
             {studentData && (
                 <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '12px', overflowX: 'auto', border: '1px solid var(--border)' }}>
-                    <div ref={tcRef} id="tc-document" style={{ width: '210mm', minHeight: '297mm', padding: '20mm', margin: '0 auto', background: 'white', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', boxSizing: 'border-box', position: 'relative', color: '#000', fontFamily: 'Arial, sans-serif', display: 'flex', flexDirection: 'column' }}>
+                    <div ref={tcRef} id="tc-document" style={{ width: '210mm', minHeight: '297mm', padding: '10mm 20mm', margin: '0 auto', background: 'white', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', boxSizing: 'border-box', position: 'relative', color: '#000', fontFamily: 'Arial, sans-serif', display: 'flex', flexDirection: 'column' }}>
                         <style>{`
                             #tc-document td, #tc-document th, #tc-document strong, #tc-document span, #tc-document div, #tc-document h1, #tc-document h2, #tc-document p {
                                 color: #000 !important;
                                 background-color: transparent !important;
                             }
+                            #tc-document td { padding: 4px 0 !important; }
                             #tc-document table tr:hover { background: transparent !important; }
                         `}</style>
                         
                         {/* Header Section */}
-                        <div style={{ display: 'flex', alignItems: 'center', borderBottom: '2px solid #000', paddingBottom: '20px', marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', borderBottom: '2px solid #000', paddingBottom: '10px', marginBottom: '10px' }}>
                             {tenant?.logo && (
                                 <img src={tenant.logo} alt="Logo" style={{ width: '100px', height: '100px', objectFit: 'contain' }} />
                             )}
@@ -252,17 +253,17 @@ export default function GenerateTCPage() {
                             </div>
                         </div>
 
-                        <h2 style={{ textAlign: 'center', margin: '0 0 30px 0', fontSize: '22px', textDecoration: 'underline' }}>TRANSFER CERTIFICATE</h2>
+                        <h2 style={{ textAlign: 'center', margin: '0 0 15px 0', fontSize: '22px', textDecoration: 'underline' }}>TRANSFER CERTIFICATE</h2>
 
                         {/* Top Info */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '30px', fontSize: '14px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '14px' }}>
                             <div><strong>TC No:</strong> {tcDetails.tcNumber}</div>
                             <div><strong>Scholar No:</strong> {studentData.scholarNo || 'N/A'}</div>
                             <div><strong>Date of Issue:</strong> {new Date(tcDetails.issueDate).toLocaleDateString('en-IN')}</div>
                         </div>
 
                         {/* Student Details Table format */}
-                        <div style={{ marginBottom: '40px' }}>
+                        <div style={{ marginBottom: '15px' }}>
                             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '15px' }}>
                                 <tbody>
                                     <tr>
@@ -351,7 +352,7 @@ export default function GenerateTCPage() {
                         </div>
 
                         {/* Signatures */}
-                        <div style={{ marginTop: 'auto', paddingTop: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
+                        <div style={{ marginTop: 'auto', paddingTop: '15px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
                             <div style={{ textAlign: 'center' }}>
                                 <div style={{ borderBottom: '1px solid #000', width: '150px', marginBottom: '5px' }}></div>
                                 <div>Prepared By</div>
