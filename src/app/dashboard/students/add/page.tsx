@@ -28,7 +28,7 @@ export default function AddStudentPage() {
         firstAdmissionClass: '', firstAdmissionDate: '', scholarshipScheme: '',
         feePlan: 'Annual', totalFee: '', feeWaiver: '', notes: '',
         aadhaarNo: '', penId: '', aparId: '', samagraId: '',
-        bankName: '', bankAccountNo: '', ifsc: '', subjectGroup: ''
+        bankName: '', bankAccountNo: '', ifsc: '', subjectGroup: '', photo: ''
     })
 
     useEffect(() => {
@@ -91,6 +91,76 @@ export default function AddStudentPage() {
                 {/* Personal Info */}
                 <div className="card" style={{ marginBottom: '20px' }}>
                     <h3 style={{ fontWeight: '700', marginBottom: '20px', fontSize: '16px', color: 'var(--primary-light)' }}>👤 Personal Information</h3>
+                    <div style={{ marginBottom: '16px' }}>
+                        <Field label="Student Photo">
+                            <div style={{ display: 'flex', gap: '16px', alignItems: 'center' }}>
+                                {form.photo ? (
+                                    <div style={{ position: 'relative' }}>
+                                        <img src={form.photo} alt="Preview" style={{ width: 80, height: 80, borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border)' }} />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setForm({...form, photo: ''})}
+                                            style={{ position: 'absolute', top: -5, right: -5, background: 'red', color: 'white', borderRadius: '50%', width: 20, height: 20, border: 'none', cursor: 'pointer', fontSize: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        >✕</button>
+                                    </div>
+                                ) : (
+                                    <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'var(--surface-2)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '24px', border: '2px dashed var(--border)' }}>
+                                        👤
+                                    </div>
+                                )}
+                                <div>
+                                    <select 
+                                        className="input" 
+                                        style={{ width: 'auto', minWidth: '150px' }}
+                                        onChange={e => {
+                                            const type = e.target.value;
+                                            e.target.value = '';
+                                            if (!type) return;
+                                            
+                                            const input = document.createElement('input');
+                                            input.type = 'file';
+                                            input.accept = 'image/*';
+                                            if (type === 'Camera') {
+                                                input.capture = 'environment';
+                                            }
+                                            input.onchange = (ev: any) => {
+                                                const file = ev.target.files[0];
+                                                if (file) {
+                                                    const reader = new FileReader();
+                                                    reader.onload = (re: any) => {
+                                                        const img = new Image();
+                                                        img.onload = () => {
+                                                            const canvas = document.createElement('canvas');
+                                                            const ctx = canvas.getContext('2d');
+                                                            const maxSize = 300;
+                                                            let w = img.width;
+                                                            let h = img.height;
+                                                            if (w > h) {
+                                                                if (w > maxSize) { h *= maxSize / w; w = maxSize; }
+                                                            } else {
+                                                                if (h > maxSize) { w *= maxSize / h; h = maxSize; }
+                                                            }
+                                                            canvas.width = w;
+                                                            canvas.height = h;
+                                                            ctx?.drawImage(img, 0, 0, w, h);
+                                                            setForm({...form, photo: canvas.toDataURL('image/jpeg', 0.8)});
+                                                        };
+                                                        img.src = re.target.result;
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                }
+                                            };
+                                            input.click();
+                                        }}
+                                    >
+                                        <option value="">Upload Photo</option>
+                                        <option value="Camera">📷 Take Photo (Camera)</option>
+                                        <option value="Gallery">📁 Upload from Gallery</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </Field>
+                    </div>
                     <div className="grid-cols-2">
                         <Field label="Scholar No. *">
                             <input className="input" placeholder="1001" value={form.scholarNo} onChange={e => setForm({ ...form, scholarNo: e.target.value })} required />

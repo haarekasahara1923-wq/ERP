@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
             fullName, phone, courseId, batchId, fatherName, motherName, parentPhone, email, address, gender, dob, 
             admissionDate, feePlan, totalFee, notes, aadhaarNo, penId, aparId, samagraId,
             scholarNo, caste, dobInWords, medium, firstAdmissionClass, firstAdmissionDate, scholarshipScheme, 
-            bankName, bankAccountNo, ifsc, subjectGroup
+            bankName, bankAccountNo, ifsc, subjectGroup, photo
         } = body
 
         if (!fullName || !phone || !courseId || !batchId) {
@@ -141,6 +141,7 @@ export async function POST(req: NextRequest) {
                 bankAccountNo: bankAccountNo || '',
                 ifsc: ifsc || '',
                 subjectGroup: subjectGroup || '',
+                photo: photo || null,
             }
         })
 
@@ -179,7 +180,7 @@ export async function PATCH(req: NextRequest) {
         const { 
             id, fullName, phone, courseId, batchId, status, fatherName, motherName, parentPhone, email, 
             totalFee, admissionDate, notes, scholarNo, dob, dobInWords, gender, caste, medium, 
-            aadhaarNo, samagraId, penId, aparId, bankName, bankAccountNo, ifsc, subjectGroup
+            aadhaarNo, samagraId, penId, aparId, bankName, bankAccountNo, ifsc, subjectGroup, photo
         } = body
 
         if (!id) return NextResponse.json({ error: 'Student ID is required' }, { status: 400 })
@@ -213,6 +214,7 @@ export async function PATCH(req: NextRequest) {
                 bankAccountNo: bankAccountNo !== undefined ? bankAccountNo : undefined,
                 ifsc: ifsc !== undefined ? ifsc : undefined,
                 subjectGroup: subjectGroup !== undefined ? subjectGroup : undefined,
+                photo: photo !== undefined ? photo : undefined,
             }
         })
 

@@ -4,7 +4,7 @@ import { useAuth, useApi } from '@/contexts/AuthContext'
 import html2pdf from 'html2pdf.js'
 
 export default function GenerateTCPage() {
-    const { tenant } = useAuth()
+    const { tenant, token } = useAuth()
     const { fetcher } = useApi()
 
     const [courses, setCourses] = useState<any[]>([])
@@ -30,13 +30,14 @@ export default function GenerateTCPage() {
     const tcRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
+        if (!token) return;
         fetcher('/api/courses').then(res => {
             if (res.success) setCourses(res.data)
         })
         fetcher('/api/batches').then(res => {
             if (res.success) setBatches(res.data)
         })
-    }, [])
+    }, [token])
 
     useEffect(() => {
         if (selectedCourseId && selectedBatchId) {
