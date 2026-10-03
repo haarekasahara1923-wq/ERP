@@ -103,7 +103,7 @@ export default function GenerateTCPage() {
         if (!tcRef.current) return
         const element = tcRef.current
         const opt = {
-            margin: 10,
+            margin: 0,
             filename: `TC_${studentData?.fullName || 'Student'}.pdf`,
             image: { type: 'jpeg' as const, quality: 0.98 },
             html2canvas: { scale: 2 },
