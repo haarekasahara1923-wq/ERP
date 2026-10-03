@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
             fullName, phone, courseId, batchId, fatherName, motherName, parentPhone, email, address, gender, dob, 
             admissionDate, feePlan, totalFee, notes, aadhaarNo, penId, aparId, samagraId,
             scholarNo, caste, dobInWords, medium, firstAdmissionClass, firstAdmissionDate, scholarshipScheme, 
-            bankName, bankAccountNo, ifsc 
+            bankName, bankAccountNo, ifsc, subjectGroup
         } = body
 
         if (!fullName || !phone || !courseId || !batchId) {
@@ -140,6 +140,7 @@ export async function POST(req: NextRequest) {
                 bankName: bankName || '',
                 bankAccountNo: bankAccountNo || '',
                 ifsc: ifsc || '',
+                subjectGroup: subjectGroup || '',
             }
         })
 
@@ -175,7 +176,11 @@ export async function PATCH(req: NextRequest) {
 
     try {
         const body = await req.json()
-        const { id, fullName, phone, courseId, batchId, status, fatherName, parentPhone, email, totalFee, admissionDate, notes } = body
+        const { 
+            id, fullName, phone, courseId, batchId, status, fatherName, motherName, parentPhone, email, 
+            totalFee, admissionDate, notes, scholarNo, dob, dobInWords, gender, caste, medium, 
+            aadhaarNo, samagraId, penId, aparId, bankName, bankAccountNo, ifsc, subjectGroup
+        } = body
 
         if (!id) return NextResponse.json({ error: 'Student ID is required' }, { status: 400 })
 
@@ -188,11 +193,26 @@ export async function PATCH(req: NextRequest) {
                 batchId,
                 status: status as any,
                 fatherName,
+                motherName,
                 parentPhone,
                 email,
                 totalFee: totalFee !== undefined ? parseFloat(totalFee) : undefined,
                 admissionDate: admissionDate ? new Date(admissionDate) : undefined,
                 notes,
+                scholarNo: scholarNo !== undefined ? scholarNo : undefined,
+                dob: dob ? new Date(dob) : undefined,
+                dobInWords: dobInWords !== undefined ? dobInWords : undefined,
+                gender: gender as any,
+                caste: caste !== undefined ? caste : undefined,
+                medium: medium !== undefined ? medium : undefined,
+                aadhaarNo: aadhaarNo !== undefined ? aadhaarNo : undefined,
+                samagraId: samagraId !== undefined ? samagraId : undefined,
+                penId: penId !== undefined ? penId : undefined,
+                aparId: aparId !== undefined ? aparId : undefined,
+                bankName: bankName !== undefined ? bankName : undefined,
+                bankAccountNo: bankAccountNo !== undefined ? bankAccountNo : undefined,
+                ifsc: ifsc !== undefined ? ifsc : undefined,
+                subjectGroup: subjectGroup !== undefined ? subjectGroup : undefined,
             }
         })
 

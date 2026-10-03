@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
                 duration: body.duration || '',
                 fees: parseFloat(body.fees) || 0,
                 subjects: body.subjects || [],
+                classGroup: body.classGroup || null,
+                subjectGroup: body.subjectGroup || null,
                 installmentCount: parseInt(body.installmentCount) || 1,
                 isActive: true,
             }
@@ -47,7 +49,7 @@ export async function PATCH(req: NextRequest) {
     if (error) return error
     try {
         const body = await req.json()
-        const { id, name, description, duration, fees, subjects, installmentCount } = body
+        const { id, name, description, duration, fees, subjects, classGroup, subjectGroup, installmentCount } = body
         if (!id) return NextResponse.json({ error: 'Course ID missing' }, { status: 400 })
 
         const course = await prisma.course.update({
@@ -58,6 +60,8 @@ export async function PATCH(req: NextRequest) {
                 duration,
                 fees: fees !== undefined ? parseFloat(fees) : undefined,
                 subjects: subjects ? subjects : undefined,
+                classGroup: classGroup !== undefined ? classGroup : undefined,
+                subjectGroup: subjectGroup !== undefined ? subjectGroup : undefined,
                 installmentCount: installmentCount !== undefined ? parseInt(installmentCount) : undefined
             }
         })

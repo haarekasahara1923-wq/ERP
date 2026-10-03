@@ -13,7 +13,7 @@ const Field = ({ label, children }: { label: string; children: React.ReactNode }
 export default function AddStudentPage() {
     const { token, handleUnauthorized } = useAuth()
     const router = useRouter()
-    const [courses, setCourses] = useState<{ id: string; name: string; fees: number; installmentCount: number }[]>([])
+    const [courses, setCourses] = useState<{ id: string; name: string; fees: number; installmentCount: number; classGroup?: string; subjectGroup?: string }[]>([])
     const [batches, setBatches] = useState<{ id: string; name: string; courseId: string }[]>([])
     const [loading, setLoading] = useState(false)
     const [success, setSuccess] = useState(false)
@@ -28,7 +28,7 @@ export default function AddStudentPage() {
         firstAdmissionClass: '', firstAdmissionDate: '', scholarshipScheme: '',
         feePlan: 'Annual', totalFee: '', feeWaiver: '', notes: '',
         aadhaarNo: '', penId: '', aparId: '', samagraId: '',
-        bankName: '', bankAccountNo: '', ifsc: ''
+        bankName: '', bankAccountNo: '', ifsc: '', subjectGroup: ''
     })
 
     useEffect(() => {
@@ -262,6 +262,27 @@ export default function AddStudentPage() {
                                     totalFee: selectedCourse ? Math.max(0, classFee - waiver).toString() : form.totalFee
                                 });
                             }} />
+                        </Field>
+                        <Field label="Subject Group">
+                            {(() => {
+                                const selectedCourse = courses.find(c => c.id === form.courseId);
+                                const isSenior = selectedCourse?.classGroup === 'Senior Hr Secondary';
+                                return (
+                                    <select
+                                        className="input"
+                                        value={form.subjectGroup}
+                                        onChange={e => setForm({ ...form, subjectGroup: e.target.value })}
+                                        disabled={!isSenior}
+                                        style={{ opacity: isSenior ? 1 : 0.5, cursor: isSenior ? 'pointer' : 'not-allowed' }}
+                                    >
+                                        <option value="">{isSenior ? 'Select Subject Group' : 'Only for Class 11 & 12'}</option>
+                                        <option value="Science Bio">Science Bio</option>
+                                        <option value="Science Maths">Science Maths</option>
+                                        <option value="Arts">Arts</option>
+                                        <option value="Commerce">Commerce</option>
+                                    </select>
+                                );
+                            })()}
                         </Field>
                         <Field label="Total Course Fee (₹) [After Waiver]">
                             <input className="input" type="number" placeholder="45000" value={form.totalFee} onChange={e => setForm({ ...form, totalFee: e.target.value })} />

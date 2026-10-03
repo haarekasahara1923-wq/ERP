@@ -254,6 +254,8 @@ model Course {
   duration         String?
   fees             Float    @default(0)
   subjects         String[]
+  classGroup       String?
+  subjectGroup     String?
   installmentCount Int      @default(1)
   isActive         Boolean  @default(true)
   createdAt        DateTime @default(now())
@@ -333,6 +335,7 @@ model Student {
   bankName            String?
   bankAccountNo       String?
   ifsc                String?
+  subjectGroup        String?
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
 

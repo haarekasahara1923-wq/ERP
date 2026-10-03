@@ -8,17 +8,26 @@ const CLASS_OPTIONS = [
     'Class 7', 'Class 8', 'Class 9', 'Class 10', 'Class 11', 'Class 12',
 ]
 
+const CLASS_GROUPS = [
+    { label: 'Junior (Upto 4th)', value: 'Junior' },
+    { label: 'Middle (5th to 8th)', value: 'Middle' },
+    { label: 'Higher Sec (9th to 10th)', value: 'Higher Sec' },
+    { label: 'Senior Hr Secondary (11th to 12th)', value: 'Senior Hr Secondary' },
+]
+
+const SUBJECT_GROUPS = ['Science Bio', 'Science Maths', 'Arts', 'Commerce']
+
 const SECTION_OPTIONS = ['A', 'B', 'C', 'D', 'E', 'F', 'G']
 
 export default function ClassesPage() {
     const { token, handleUnauthorized } = useAuth()
-    const [courses, setCourses] = useState<{ id: string; name: string; description: string; duration: string; fees: number; subjects: string[]; installmentCount: number; isActive: boolean }[]>([])
+    const [courses, setCourses] = useState<{ id: string; name: string; description: string; duration: string; fees: number; subjects: string[]; installmentCount: number; isActive: boolean; classGroup?: string; subjectGroup?: string }[]>([])
     const [batches, setBatches] = useState<{ id: string; name: string; courseId: string; courseName: string; startTime: string; endTime: string; capacity: number; studentCount: number }[]>([])
     const [loading, setLoading] = useState(true)
     const [activeTab, setActiveTab] = useState('courses')
     const [showAddCourse, setShowAddCourse] = useState(false)
     const [showAddBatch, setShowAddBatch] = useState(false)
-    const [courseForm, setCourseForm] = useState({ id: '', name: '', description: '', duration: '', fees: '', subjects: '', installmentCount: '1' })
+    const [courseForm, setCourseForm] = useState({ id: '', name: '', description: '', duration: '', fees: '', subjects: '', installmentCount: '1', classGroup: '', subjectGroup: '' })
     const [batchForm, setBatchForm] = useState({ id: '', name: '', courseId: '', section: 'A', capacity: '40' })
     const [saving, setSaving] = useState(false)
     const [toast, setToast] = useState('')
@@ -59,7 +68,7 @@ export default function ClassesPage() {
         if (data.success) {
             setToast(`Class ${isEdit ? 'updated' : 'added'}!`)
             setShowAddCourse(false)
-            setCourseForm({ id: '', name: '', description: '', duration: '', fees: '', subjects: '', installmentCount: '1' })
+            setCourseForm({ id: '', name: '', description: '', duration: '', fees: '', subjects: '', installmentCount: '1', classGroup: '', subjectGroup: '' })
             fetchData()
             setTimeout(() => setToast(''), 3000)
         } else { handleApiError(data, res.status) }
@@ -108,7 +117,8 @@ export default function ClassesPage() {
     const openEditCourse = (c: any) => {
         setCourseForm({
             id: c.id, name: c.name, description: c.description, duration: c.duration,
-            fees: String(c.fees), subjects: c.subjects.join(', '), installmentCount: String(c.installmentCount)
+            fees: String(c.fees), subjects: c.subjects.join(', '), installmentCount: String(c.installmentCount),
+            classGroup: c.classGroup || '', subjectGroup: c.subjectGroup || ''
         })
         setShowAddCourse(true)
     }
@@ -149,7 +159,10 @@ export default function ClassesPage() {
                         courses.map(c => (
                             <div key={c.id} className="card">
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px' }}>
-                                    <h3 style={{ fontWeight: '700', fontSize: '16px' }}>{c.name}</h3>
+                                    <div>
+                                        <h3 style={{ fontWeight: '700', fontSize: '16px' }}>{c.name}</h3>
+                                        <span style={{ fontSize: '11px', color: 'var(--text-muted)' }}>{c.classGroup} {c.subjectGroup ? `• ${c.subjectGroup}` : ''}</span>
+                                    </div>
                                     <div style={{ display: 'flex', gap: '8px' }}>
                                         <button onClick={() => openEditCourse(c)} className="btn btn-sm" style={{ padding: '4px', background: 'transparent', color: '#6366f1' }}>✏️</button>
                                         <button onClick={() => handleDelete('course', c.id)} className="btn btn-sm" style={{ padding: '4px', background: 'transparent', color: '#ef4444' }}>🗑️</button>
@@ -236,6 +249,28 @@ export default function ClassesPage() {
                                         ))}
                                     </select>
                                 </div>
+                                <div>
+                                    <label className="label">Class Group *</label>
+                                    <select className="input" value={courseForm.classGroup} onChange={e => {
+                                        setCourseForm({ ...courseForm, classGroup: e.target.value, subjectGroup: e.target.value !== 'Senior Hr Secondary' ? '' : courseForm.subjectGroup })
+                                    }} required>
+                                        <option value="">Select Group</option>
+                                        {CLASS_GROUPS.map(g => (
+                                            <option key={g.value} value={g.value}>{g.label}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                                {courseForm.classGroup === 'Senior Hr Secondary' && (
+                                    <div>
+                                        <label className="label">Subject Group *</label>
+                                        <select className="input" value={courseForm.subjectGroup} onChange={e => setCourseForm({ ...courseForm, subjectGroup: e.target.value })} required>
+                                            <option value="">Select Subject Group</option>
+                                            {SUBJECT_GROUPS.map(sg => (
+                                                <option key={sg} value={sg}>{sg}</option>
+                                            ))}
+                                        </select>
+                                    </div>
+                                )}
                                 <div><label className="label">Description</label><input className="input" placeholder="e.g. Primary level curriculum" value={courseForm.description} onChange={e => setCourseForm({ ...courseForm, description: e.target.value })} /></div>
                                 <div className="grid-cols-2">
                                     <div><label className="label">Fees (₹)</label><input className="input" type="number" placeholder="12000" value={courseForm.fees} onChange={e => setCourseForm({ ...courseForm, fees: e.target.value })} /></div>
