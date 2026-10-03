@@ -24,7 +24,7 @@ export default function AddStudentPage() {
         fullName: '', fatherName: '', motherName: '', phone: '', parentPhone: '',
         email: '', address: '', gender: 'MALE', dob: '', courseId: '', batchId: '',
         admissionDate: new Date().toISOString().split('T')[0],
-        feePlan: 'Annual', totalFee: '', notes: '',
+        feePlan: 'Annual', totalFee: '', feeWaiver: '', notes: '',
         aadhaarNo: '', penId: '', aparId: '', samagraId: ''
     })
 
@@ -155,11 +155,13 @@ export default function AddStudentPage() {
                                 onChange={e => {
                                     const courseId = e.target.value;
                                     const selectedCourse = courses.find(c => c.id === courseId);
+                                    const classFee = selectedCourse ? selectedCourse.fees : 0;
+                                    const waiver = parseFloat(form.feeWaiver) || 0;
                                     setForm({ 
                                         ...form, 
                                         courseId, 
                                         batchId: '', 
-                                        totalFee: selectedCourse ? selectedCourse.fees.toString() : '' 
+                                        totalFee: selectedCourse ? Math.max(0, classFee - waiver).toString() : '' 
                                     });
                                 }} 
                                 required 
@@ -191,7 +193,20 @@ export default function AddStudentPage() {
                                 <option>Custom</option>
                             </select>
                         </Field>
-                        <Field label="Total Course Fee (₹)">
+                        <Field label="Fee Waiver (₹)">
+                            <input className="input" type="number" placeholder="0" value={form.feeWaiver} onChange={e => {
+                                const waiverStr = e.target.value;
+                                const waiver = parseFloat(waiverStr) || 0;
+                                const selectedCourse = courses.find(c => c.id === form.courseId);
+                                const classFee = selectedCourse ? selectedCourse.fees : (parseFloat(form.totalFee) + (parseFloat(form.feeWaiver) || 0));
+                                setForm({ 
+                                    ...form, 
+                                    feeWaiver: waiverStr,
+                                    totalFee: selectedCourse ? Math.max(0, classFee - waiver).toString() : form.totalFee
+                                });
+                            }} />
+                        </Field>
+                        <Field label="Total Course Fee (₹) [After Waiver]">
                             <input className="input" type="number" placeholder="45000" value={form.totalFee} onChange={e => setForm({ ...form, totalFee: e.target.value })} />
                         </Field>
                     </div>
