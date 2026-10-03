@@ -365,6 +365,7 @@ export default function StudentsPage() {
                             <button onClick={() => { setSelectedStudent(null); setIsEditing(false); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}>✕</button>
                         </div>
                         <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
+                            {isEditing ? (
                                 <form onSubmit={handleUpdate} className="grid-cols-2" style={{ gap: '16px' }}>
                                     <div><label className="label">Scholar No.</label><input className="input" value={editForm.scholarNo || ''} onChange={e => setEditForm({...editForm, scholarNo: e.target.value})} /></div>
                                     <div><label className="label">Full Name</label><input className="input" value={editForm.fullName || ''} onChange={e => setEditForm({...editForm, fullName: e.target.value})} /></div>
