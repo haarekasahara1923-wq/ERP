@@ -145,23 +145,23 @@ export default function GenerateTCPage() {
             <div className="card" style={{ padding: '20px', marginBottom: '24px', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
                     <div>
-                        <label className="form-label">Class</label>
-                        <select className="form-select" value={selectedCourseId} onChange={e => setSelectedCourseId(e.target.value)}>
+                        <label className="label">Class</label>
+                        <select className="input" value={selectedCourseId} onChange={e => setSelectedCourseId(e.target.value)}>
                             <option value="">Select Class</option>
                             {courses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
                     <div>
-                        <label className="form-label">Batch</label>
-                        <select className="form-select" value={selectedBatchId} onChange={e => setSelectedBatchId(e.target.value)}>
+                        <label className="label">Batch</label>
+                        <select className="input" value={selectedBatchId} onChange={e => setSelectedBatchId(e.target.value)}>
                             <option value="">Select Batch</option>
                             {batches.filter(b => b.courseId === selectedCourseId).map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
                         </select>
                     </div>
                     {isHigherSec && (
                         <div>
-                            <label className="form-label">Subject Group</label>
-                            <select className="form-select" value={selectedSubjectGroup} onChange={e => setSelectedSubjectGroup(e.target.value)}>
+                            <label className="label">Subject Group</label>
+                            <select className="input" value={selectedSubjectGroup} onChange={e => setSelectedSubjectGroup(e.target.value)}>
                                 <option value="">Select Group (Optional)</option>
                                 <option value="Science Maths">Science Maths</option>
                                 <option value="Science Bio">Science Bio</option>
@@ -171,8 +171,8 @@ export default function GenerateTCPage() {
                         </div>
                     )}
                     <div>
-                        <label className="form-label">Scholar No.</label>
-                        <select className="form-select" value={selectedStudentId} onChange={e => setSelectedStudentId(e.target.value)} disabled={!students.length}>
+                        <label className="label">Scholar No.</label>
+                        <select className="input" value={selectedStudentId} onChange={e => setSelectedStudentId(e.target.value)} disabled={!students.length}>
                             <option value="">{students.length ? 'Select Scholar No.' : 'No Students Found'}</option>
                             {students.map(s => <option key={s.id} value={s.id}>{s.fullName} ({s.scholarNo || 'N/A'})</option>)}
                         </select>
@@ -182,35 +182,35 @@ export default function GenerateTCPage() {
                 {studentData && (
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px', marginTop: '16px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
                         <div>
-                            <label className="form-label">Attendance</label>
-                            <select className="form-select" value={tcDetails.attendance} onChange={e => setTcDetails({...tcDetails, attendance: e.target.value})}>
+                            <label className="label">Attendance</label>
+                            <select className="input" value={tcDetails.attendance} onChange={e => setTcDetails({...tcDetails, attendance: e.target.value})}>
                                 <option value="Whole">Whole</option>
                                 <option value="Compulsory">Compulsory</option>
                                 <option value="Short">Short</option>
                             </select>
                         </div>
                         <div>
-                            <label className="form-label">Accounts Clearance</label>
-                            <select className="form-select" value={tcDetails.accountsClearance} onChange={e => setTcDetails({...tcDetails, accountsClearance: e.target.value})}>
+                            <label className="label">Accounts Clearance</label>
+                            <select className="input" value={tcDetails.accountsClearance} onChange={e => setTcDetails({...tcDetails, accountsClearance: e.target.value})}>
                                 <option value="Clear">Clear</option>
                                 <option value="Dues">Dues</option>
                             </select>
                         </div>
                         <div>
-                            <label className="form-label">Date of Issue</label>
-                            <input type="date" className="form-input" value={tcDetails.issueDate} onChange={e => setTcDetails({...tcDetails, issueDate: e.target.value})} />
+                            <label className="label">Date of Issue</label>
+                            <input type="date" className="input" value={tcDetails.issueDate} onChange={e => setTcDetails({...tcDetails, issueDate: e.target.value})} />
                         </div>
                         <div>
-                            <label className="form-label">Reason for Leaving</label>
-                            <input type="text" className="form-input" value={tcDetails.reason} onChange={e => setTcDetails({...tcDetails, reason: e.target.value})} />
+                            <label className="label">Reason for Leaving</label>
+                            <input type="text" className="input" value={tcDetails.reason} onChange={e => setTcDetails({...tcDetails, reason: e.target.value})} />
                         </div>
                         <div>
-                            <label className="form-label">Character</label>
-                            <input type="text" className="form-input" value={tcDetails.character} onChange={e => setTcDetails({...tcDetails, character: e.target.value})} />
+                            <label className="label">Character</label>
+                            <input type="text" className="input" value={tcDetails.character} onChange={e => setTcDetails({...tcDetails, character: e.target.value})} />
                         </div>
                         <div>
-                            <label className="form-label">Promoted To</label>
-                            <input type="text" className="form-input" value={tcDetails.promotedTo} onChange={e => setTcDetails({...tcDetails, promotedTo: e.target.value})} />
+                            <label className="label">Promoted To</label>
+                            <input type="text" className="input" value={tcDetails.promotedTo} onChange={e => setTcDetails({...tcDetails, promotedTo: e.target.value})} />
                         </div>
                     </div>
                 )}
@@ -230,7 +230,14 @@ export default function GenerateTCPage() {
             {/* TC PREVIEW */}
             {studentData && (
                 <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '12px', overflowX: 'auto', border: '1px solid var(--border)' }}>
-                    <div ref={tcRef} style={{ width: '210mm', minHeight: '297mm', padding: '20mm', margin: '0 auto', background: 'white', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', boxSizing: 'border-box', position: 'relative', color: '#000', fontFamily: 'Arial, sans-serif' }}>
+                    <div ref={tcRef} id="tc-document" style={{ width: '210mm', minHeight: '297mm', padding: '20mm', margin: '0 auto', background: 'white', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', boxSizing: 'border-box', position: 'relative', color: '#000', fontFamily: 'Arial, sans-serif' }}>
+                        <style>{`
+                            #tc-document td, #tc-document th, #tc-document strong, #tc-document span, #tc-document div, #tc-document h1, #tc-document h2, #tc-document p {
+                                color: #000 !important;
+                                background-color: transparent !important;
+                            }
+                            #tc-document table tr:hover { background: transparent !important; }
+                        `}</style>
                         
                         {/* Header Section */}
                         <div style={{ display: 'flex', alignItems: 'center', borderBottom: '2px solid #000', paddingBottom: '20px', marginBottom: '20px' }}>
