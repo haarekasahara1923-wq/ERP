@@ -230,7 +230,7 @@ export default function GenerateTCPage() {
             {/* TC PREVIEW */}
             {studentData && (
                 <div style={{ background: '#f8fafc', padding: '24px', borderRadius: '12px', overflowX: 'auto', border: '1px solid var(--border)' }}>
-                    <div ref={tcRef} id="tc-document" style={{ width: '210mm', minHeight: '297mm', padding: '20mm', margin: '0 auto', background: 'white', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', boxSizing: 'border-box', position: 'relative', color: '#000', fontFamily: 'Arial, sans-serif' }}>
+                    <div ref={tcRef} id="tc-document" style={{ width: '210mm', minHeight: '297mm', padding: '20mm', margin: '0 auto', background: 'white', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)', boxSizing: 'border-box', position: 'relative', color: '#000', fontFamily: 'Arial, sans-serif', display: 'flex', flexDirection: 'column' }}>
                         <style>{`
                             #tc-document td, #tc-document th, #tc-document strong, #tc-document span, #tc-document div, #tc-document h1, #tc-document h2, #tc-document p {
                                 color: #000 !important;
@@ -293,7 +293,7 @@ export default function GenerateTCPage() {
                                     <tr>
                                         <td style={{ padding: '8px 0' }}><strong>6. Date of First Admission & Class:</strong></td>
                                         <td style={{ padding: '8px 0' }} colSpan={2}>
-                                            {studentData.firstAdmissionDate ? new Date(studentData.firstAdmissionDate).toLocaleDateString('en-IN') : 'N/A'} in Class {studentData.firstAdmissionClass || 'N/A'}
+                                            {studentData.firstAdmissionDate ? new Date(studentData.firstAdmissionDate).toLocaleDateString('en-IN') : ''}{studentData.firstAdmissionClass ? ` in Class ${studentData.firstAdmissionClass}` : ''}
                                         </td>
                                     </tr>
                                     <tr>
@@ -351,7 +351,7 @@ export default function GenerateTCPage() {
                         </div>
 
                         {/* Signatures */}
-                        <div style={{ position: 'absolute', bottom: '40mm', left: '20mm', right: '20mm', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+                        <div style={{ marginTop: 'auto', paddingTop: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', width: '100%' }}>
                             <div style={{ textAlign: 'center' }}>
                                 <div style={{ borderBottom: '1px solid #000', width: '150px', marginBottom: '5px' }}></div>
                                 <div>Prepared By</div>
