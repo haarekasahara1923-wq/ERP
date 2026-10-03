@@ -22,7 +22,7 @@ export default function AddStudentPage() {
 
     const [form, setForm] = useState({
         scholarNo: '', fullName: '', fatherName: '', motherName: '', phone: '', parentPhone: '',
-        email: '', address: '', gender: 'MALE', dob: '', dobInWords: '', caste: '', medium: 'Hindi',
+        email: '', address: '', gender: 'MALE', dob: '', dobInWords: '', caste: 'General', medium: 'Hindi',
         courseId: '', batchId: '',
         admissionDate: new Date().toISOString().split('T')[0],
         firstAdmissionClass: '', firstAdmissionDate: '', scholarshipScheme: '',
@@ -127,7 +127,13 @@ export default function AddStudentPage() {
                             <input className="input" placeholder="First January Two Thousand" value={form.dobInWords} onChange={e => setForm({ ...form, dobInWords: e.target.value })} />
                         </Field>
                         <Field label="Caste">
-                            <input className="input" placeholder="General/OBC/SC/ST" value={form.caste} onChange={e => setForm({ ...form, caste: e.target.value })} />
+                            <select className="input" value={form.caste} onChange={e => setForm({ ...form, caste: e.target.value })}>
+                                <option value="General">General</option>
+                                <option value="SC">SC</option>
+                                <option value="ST">ST</option>
+                                <option value="OBC">OBC</option>
+                                <option value="OTHER">OTHER</option>
+                            </select>
                         </Field>
                         <Field label="Medium">
                             <select className="input" value={form.medium} onChange={e => setForm({ ...form, medium: e.target.value })}>

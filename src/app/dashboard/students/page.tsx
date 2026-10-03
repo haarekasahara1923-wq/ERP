@@ -28,6 +28,19 @@ interface Student {
     parentPassword?: string
     examResults?: any[]
     courseSubjects?: string[]
+    scholarNo?: string
+    caste?: string
+    dobInWords?: string
+    medium?: string
+    firstAdmissionClass?: string
+    firstAdmissionDate?: string
+    scholarshipScheme?: string
+    bankName?: string
+    bankAccountNo?: string
+    ifsc?: string
+    dob?: string
+    address?: string
+    motherName?: string
 }
 
 const statusColors: Record<string, string> = {
@@ -38,7 +51,7 @@ const statusColors: Record<string, string> = {
 }
 
 export default function StudentsPage() {
-    const { token, user, handleUnauthorized } = useAuth()
+    const { token, user, tenant, handleUnauthorized } = useAuth()
     const canEditOrDelete = user?.role === 'SUPER_ADMIN' || user?.role === 'COACHING_ADMIN'
     const [students, setStudents] = useState<Student[]>([])
     const [loading, setLoading] = useState(true)
@@ -352,37 +365,57 @@ export default function StudentsPage() {
                             <button onClick={() => { setSelectedStudent(null); setIsEditing(false); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}>✕</button>
                         </div>
                         <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
-                            {isEditing ? (
                                 <form onSubmit={handleUpdate} className="grid-cols-2" style={{ gap: '16px' }}>
-                                    <div className="col-span-2">
-                                        <label className="label">Full Name</label>
-                                        <input className="input" value={editForm.fullName} onChange={e => setEditForm({...editForm, fullName: e.target.value})} />
+                                    <div><label className="label">Scholar No.</label><input className="input" value={editForm.scholarNo || ''} onChange={e => setEditForm({...editForm, scholarNo: e.target.value})} /></div>
+                                    <div><label className="label">Full Name</label><input className="input" value={editForm.fullName || ''} onChange={e => setEditForm({...editForm, fullName: e.target.value})} /></div>
+                                    <div><label className="label">Phone</label><input className="input" value={editForm.phone || ''} onChange={e => setEditForm({...editForm, phone: e.target.value})} /></div>
+                                    <div><label className="label">Parent Phone</label><input className="input" value={editForm.parentPhone || ''} onChange={e => setEditForm({...editForm, parentPhone: e.target.value})} /></div>
+                                    <div><label className="label">Father's Name</label><input className="input" value={editForm.fatherName || ''} onChange={e => setEditForm({...editForm, fatherName: e.target.value})} /></div>
+                                    <div><label className="label">Mother's Name</label><input className="input" value={editForm.motherName || ''} onChange={e => setEditForm({...editForm, motherName: e.target.value})} /></div>
+                                    <div><label className="label">DOB</label><input type="date" className="input" value={editForm.dob ? new Date(editForm.dob).toISOString().split('T')[0] : ''} onChange={e => setEditForm({...editForm, dob: e.target.value})} /></div>
+                                    <div><label className="label">DOB in words</label><input className="input" value={editForm.dobInWords || ''} onChange={e => setEditForm({...editForm, dobInWords: e.target.value})} /></div>
+                                    <div>
+                                        <label className="label">Gender</label>
+                                        <select className="input" value={editForm.gender || 'MALE'} onChange={e => setEditForm({...editForm, gender: e.target.value})}>
+                                            <option value="MALE">Male</option>
+                                            <option value="FEMALE">Female</option>
+                                            <option value="OTHER">Other</option>
+                                        </select>
                                     </div>
                                     <div>
-                                        <label className="label">Phone Number</label>
-                                        <input className="input" value={editForm.phone} onChange={e => setEditForm({...editForm, phone: e.target.value})} />
+                                        <label className="label">Caste</label>
+                                        <select className="input" value={editForm.caste || 'General'} onChange={e => setEditForm({...editForm, caste: e.target.value})}>
+                                            <option value="General">General</option>
+                                            <option value="SC">SC</option>
+                                            <option value="ST">ST</option>
+                                            <option value="OBC">OBC</option>
+                                            <option value="OTHER">OTHER</option>
+                                        </select>
                                     </div>
                                     <div>
-                                        <label className="label">Parent Phone</label>
-                                        <input className="input" value={editForm.parentPhone} onChange={e => setEditForm({...editForm, parentPhone: e.target.value})} />
+                                        <label className="label">Medium</label>
+                                        <select className="input" value={editForm.medium || 'Hindi'} onChange={e => setEditForm({...editForm, medium: e.target.value})}>
+                                            <option value="Hindi">Hindi</option>
+                                            <option value="English">English</option>
+                                        </select>
                                     </div>
+                                    <div><label className="label">Aadhaar No</label><input className="input" value={editForm.aadhaarNo || ''} onChange={e => setEditForm({...editForm, aadhaarNo: e.target.value})} /></div>
+                                    <div><label className="label">Samagra ID</label><input className="input" value={editForm.samagraId || ''} onChange={e => setEditForm({...editForm, samagraId: e.target.value})} /></div>
+                                    <div><label className="label">PEN ID</label><input className="input" value={editForm.penId || ''} onChange={e => setEditForm({...editForm, penId: e.target.value})} /></div>
+                                    <div><label className="label">APAR ID</label><input className="input" value={editForm.aparId || ''} onChange={e => setEditForm({...editForm, aparId: e.target.value})} /></div>
+                                    <div><label className="label">Total Fee</label><input type="number" className="input" value={editForm.totalFee || ''} onChange={e => setEditForm({...editForm, totalFee: e.target.value})} /></div>
                                     <div>
-                                        <label className="label">Father's Name</label>
-                                        <input className="input" value={editForm.fatherName} onChange={e => setEditForm({...editForm, fatherName: e.target.value})} />
-                                    </div>
-                                    <div>
-                                        <label className="label">Total Fee</label>
-                                        <input type="number" className="input" value={editForm.totalFee} onChange={e => setEditForm({...editForm, totalFee: e.target.value})} />
-                                    </div>
-                                    <div className="col-span-2">
                                         <label className="label">Status</label>
-                                        <select className="input" value={editForm.status} onChange={e => setEditForm({...editForm, status: e.target.value})}>
+                                        <select className="input" value={editForm.status || 'ACTIVE'} onChange={e => setEditForm({...editForm, status: e.target.value})}>
                                             <option value="ACTIVE">ACTIVE</option>
                                             <option value="INACTIVE">INACTIVE</option>
                                             <option value="DROPOUT">DROPOUT</option>
                                             <option value="PASSED">PASSED</option>
                                         </select>
                                     </div>
+                                    <div><label className="label">Bank Name</label><input className="input" value={editForm.bankName || ''} onChange={e => setEditForm({...editForm, bankName: e.target.value})} /></div>
+                                    <div><label className="label">Bank Account No.</label><input className="input" value={editForm.bankAccountNo || ''} onChange={e => setEditForm({...editForm, bankAccountNo: e.target.value})} /></div>
+                                    <div className="col-span-2"><label className="label">IFSC Code</label><input className="input" value={editForm.ifsc || ''} onChange={e => setEditForm({...editForm, ifsc: e.target.value})} /></div>
                                     <div className="col-span-2" style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                                         <button type="submit" className="btn btn-primary" disabled={actionLoading} style={{ flex: 1 }}>
                                             {actionLoading ? 'Saving...' : '💾 Save Changes'}
@@ -511,10 +544,88 @@ export default function StudentsPage() {
                                 {canEditOrDelete && (
                                     <button onClick={() => { setEditForm(selectedStudent); setIsEditing(true); }} className="btn btn-secondary">✏️ Edit Details</button>
                                 )}
+                                <button onClick={() => downloadPDF('admission-form-content', `${selectedStudent.fullName}_Admission_Form`)} className="btn btn-primary">📄 Admission Form</button>
                                 <a href={`https://wa.me/${(selectedStudent.parentPhone || selectedStudent.phone)?.replace(/\D/g, '')}?text=Dear Parent, This is regarding ${selectedStudent.fullName} from our school.`} target="_blank" className="btn btn-success">💬 WhatsApp Parent</a>
                                 <button onClick={() => setSelectedStudent(null)} className="btn btn-secondary">Close</button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Hidden Admission Form for PDF */}
+            {selectedStudent && (
+                <div style={{ display: 'none' }}>
+                    <div id="admission-form-content" style={{ padding: '20px', fontFamily: 'sans-serif' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '2px solid #000', paddingBottom: '10px' }}>
+                            {tenant?.logo && <img src={tenant.logo} alt="Logo" style={{ height: '60px', marginBottom: '10px' }} />}
+                            <h1 style={{ margin: 0, fontSize: '24px', textTransform: 'uppercase' }}>{tenant?.name || 'SCHOOL NAME'}</h1>
+                            <p style={{ margin: '5px 0' }}>{tenant?.address || 'School Address'}</p>
+                            <p style={{ margin: '0' }}>Phone: {tenant?.phone || '-'} | Email: {tenant?.email || '-'}</p>
+                            <h2 style={{ marginTop: '15px', textDecoration: 'underline' }}>ADMISSION FORM</h2>
+                        </div>
+                        
+                        <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '20px' }}>
+                            <tbody>
+                                <tr>
+                                    <td style={{ border: '1px solid #000', padding: '8px', width: '25%', fontWeight: 'bold' }}>Scholar No.</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px', width: '25%' }}>{selectedStudent.scholarNo || '-'}</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px', width: '25%', fontWeight: 'bold' }}>Admission Date</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px', width: '25%' }}>{selectedStudent.admissionDate ? formatDate(selectedStudent.admissionDate) : '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Student Name</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }} colSpan={3}>{selectedStudent.fullName}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Date of Birth</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{selectedStudent.dob ? formatDate(selectedStudent.dob) : '-'}</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>DOB (In Words)</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{selectedStudent.dobInWords || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Gender</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{selectedStudent.gender || '-'}</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Caste / Medium</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{(selectedStudent.caste || '-') + ' / ' + (selectedStudent.medium || '-')}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Class & Section</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{selectedStudent.courseName} - {selectedStudent.batchName}</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Phone Number</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{selectedStudent.phone || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Father's Name</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{selectedStudent.fatherName || '-'}</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Mother's Name</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{selectedStudent.motherName || '-'}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Parent Phone</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{selectedStudent.parentPhone || '-'}</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Aadhaar / Samagra</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{(selectedStudent.aadhaarNo || '-') + ' / ' + (selectedStudent.samagraId || '-')}</td>
+                                </tr>
+                                <tr>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>Bank Name</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{selectedStudent.bankName || '-'}</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px', fontWeight: 'bold' }}>A/C & IFSC</td>
+                                    <td style={{ border: '1px solid #000', padding: '8px' }}>{(selectedStudent.bankAccountNo || '-') + ' / ' + (selectedStudent.ifsc || '-')}</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                        
+                        <div style={{ marginTop: '50px', display: 'flex', justifyContent: 'space-between', padding: '0 20px' }}>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ borderBottom: '1px solid #000', width: '150px', marginBottom: '5px' }}></div>
+                                <p style={{ margin: 0 }}>Parent/Guardian Signature</p>
+                            </div>
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ borderBottom: '1px solid #000', width: '150px', marginBottom: '5px' }}></div>
+                                <p style={{ margin: 0 }}>Authorized Signatory</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}
