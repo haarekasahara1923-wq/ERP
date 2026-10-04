@@ -10,7 +10,7 @@ export default function StaffMyAttendancePage() {
     const [msg, setMsg] = useState('')
 
     useEffect(() => {
-        if (token && user?.teacherProfile?.id) {
+        if (token && (user as any)?.teacherProfile?.id) {
             fetchAttendance()
         }
     }, [token, user])
@@ -18,7 +18,7 @@ export default function StaffMyAttendancePage() {
     const fetchAttendance = async () => {
         setLoading(true)
         try {
-            const r = await fetch(`/api/teachers/attendance?teacherId=${user?.teacherProfile?.id}`, {
+            const r = await fetch(`/api/teachers/attendance?teacherId=${(user as any)?.teacherProfile?.id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             const res = await r.json()
@@ -37,7 +37,7 @@ export default function StaffMyAttendancePage() {
     }
 
     const markAttendance = async () => {
-        if (!user?.teacherProfile?.id) return
+        if (!(user as any)?.teacherProfile?.id) return
         setMsg('Marking...')
         try {
             const now = new Date()
@@ -47,7 +47,7 @@ export default function StaffMyAttendancePage() {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({
-                    teacherId: user.teacherProfile.id,
+                    teacherId: (user as any).teacherProfile.id,
                     date: now.toISOString(),
                     status: 'PRESENT',
                     inTime: inTime,

@@ -12,13 +12,13 @@ export default function StaffLeavesPage() {
     const [successMsg, setSuccessMsg] = useState('')
 
     useEffect(() => {
-        if (!token || !user?.teacherProfile?.id) return
+        if (!token || !(user as any)?.teacherProfile?.id) return
         fetchLeaves()
     }, [token, user])
 
     const fetchLeaves = async () => {
         try {
-            const r = await fetch(`/api/teachers/leaves?teacherId=${user?.teacherProfile?.id}`, {
+            const r = await fetch(`/api/teachers/leaves?teacherId=${(user as any)?.teacherProfile?.id}`, {
                 headers: { Authorization: `Bearer ${token}` }
             })
             const res = await r.json()
@@ -32,7 +32,7 @@ export default function StaffLeavesPage() {
         e.preventDefault()
         setErrorMsg('')
         setSuccessMsg('')
-        if (!user?.teacherProfile?.id) {
+        if (!(user as any)?.teacherProfile?.id) {
             setErrorMsg('Teacher profile not found. Please contact admin.')
             return
         }
@@ -41,7 +41,7 @@ export default function StaffLeavesPage() {
             const r = await fetch('/api/teachers/leaves', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ teacherId: user.teacherProfile.id, startDate, endDate, reason })
+                body: JSON.stringify({ teacherId: (user as any).teacherProfile.id, startDate, endDate, reason })
             })
             const res = await r.json()
             if (res.success) {
