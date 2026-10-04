@@ -100,6 +100,11 @@ model Tenant {
   globalAffiliateMarketplaceCommissions  AffiliateMarketplaceCommission[]
   exams                                  Exam[]
   examResults                            ExamResult[]
+
+  // TMS
+  leaveApplications    LeaveApplication[]
+  teacherSalaryLedgers TeacherSalaryLedger[]
+  timeTables           TimeTable[]
 }
 
 model Affiliate {
@@ -213,6 +218,7 @@ model User {
   studentProfile Student? // If role is STUDENT
   parentProfile  ParentProfile? // If role is PARENT
   driverProfile  DriverProfile? // If role is DRIVER
+  teacherProfile Teacher? // If role is TEACHER
 
   @@unique([tenantId, email])
   @@index([tenantId])
@@ -266,10 +272,11 @@ model Course {
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
-  tenant   Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  students Student[]
-  batches  Batch[]
-  exams    Exam[]
+  tenant     Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  students   Student[]
+  batches    Batch[]
+  exams      Exam[]
+  timeTables TimeTable[]
 
   @@index([tenantId])
 }
@@ -297,43 +304,44 @@ model Batch {
   mockTests   MockTest[]
   homeworks   Homework[]
   exams       Exam[]
+  timeTables  TimeTable[]
 
   @@index([tenantId])
 }
 
 model Student {
-  id            String        @id @default(cuid())
-  tenantId      String
-  courseId      String
-  batchId       String
-  branchId      String?
-  studentId     String?
-  userId        String?       @unique // Links to User account for login
-  fullName      String
-  fatherName    String?
-  motherName    String?
-  phone         String
-  parentPhone   String?
-  email         String?
-  address       String?
-  dob           DateTime?
-  gender        Gender        @default(MALE)
-  photo         String?
-  idProof       String?
-  aadhaarNo     String?
-  penId         String?
-  aparId        String?
-  samagraId     String?
-  admissionDate DateTime      @default(now())
-  feePlan       String?
-  totalFee      Float         @default(0)
-  paidFee       Float         @default(0)
-  status        StudentStatus @default(ACTIVE)
-  notes         String?
-  scholarNo     String?
-  caste         String?
-  dobInWords    String?
-  medium        String?
+  id                  String        @id @default(cuid())
+  tenantId            String
+  courseId            String
+  batchId             String
+  branchId            String?
+  studentId           String?
+  userId              String?       @unique // Links to User account for login
+  fullName            String
+  fatherName          String?
+  motherName          String?
+  phone               String
+  parentPhone         String?
+  email               String?
+  address             String?
+  dob                 DateTime?
+  gender              Gender        @default(MALE)
+  photo               String?
+  idProof             String?
+  aadhaarNo           String?
+  penId               String?
+  aparId              String?
+  samagraId           String?
+  admissionDate       DateTime      @default(now())
+  feePlan             String?
+  totalFee            Float         @default(0)
+  paidFee             Float         @default(0)
+  status              StudentStatus @default(ACTIVE)
+  notes               String?
+  scholarNo           String?
+  caste               String?
+  dobInWords          String?
+  medium              String?
   firstAdmissionClass String?
   firstAdmissionDate  DateTime?
   scholarshipScheme   String?
@@ -341,8 +349,8 @@ model Student {
   bankAccountNo       String?
   ifsc                String?
   subjectGroup        String?
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
 
   tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   course              Course               @relation(fields: [courseId], references: [id])
@@ -381,6 +389,7 @@ enum StudentStatus {
 model Teacher {
   id        String   @id @default(cuid())
   tenantId  String
+  userId    String?  @unique
   name      String
   email     String?
   phone     String
@@ -392,8 +401,12 @@ model Teacher {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  tenant      Tenant       @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  attendances Attendance[]
+  tenant            Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  userAccount       User?                 @relation(fields: [userId], references: [id])
+  attendances       Attendance[]
+  leaveApplications LeaveApplication[]
+  salaryLedgers     TeacherSalaryLedger[]
+  timeTables        TimeTable[]
 
   @@index([tenantId])
 }
@@ -432,7 +445,7 @@ model Payment {
   tenantId   String
   studentId  String
   feeId      String?
-  receiptNo  String?     // Auto-generated receipt number
+  receiptNo  String? // Auto-generated receipt number
   amount     Float
   mode       PaymentMode @default(CASH)
   reference  String?
@@ -464,8 +477,10 @@ model Attendance {
   tenantId  String
   studentId String?
   teacherId String?
-  batchId   String
+  batchId   String?
   date      DateTime
+  inTime    String?
+  outTime   String?
   status    AttendanceStatus @default(PRESENT)
   markedBy  String?
   notes     String?
@@ -475,7 +490,7 @@ model Attendance {
   tenant  Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   student Student? @relation(fields: [studentId], references: [id])
   teacher Teacher? @relation(fields: [teacherId], references: [id])
-  batch   Batch    @relation(fields: [batchId], references: [id])
+  batch   Batch?   @relation(fields: [batchId], references: [id])
 
   @@index([tenantId])
   @@index([tenantId, date])
@@ -1032,4 +1047,88 @@ model VehicleLocation {
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
 
   @@index([vehicleId, timestamp])
+}
+
+// =============================================
+// TEACHER MANAGEMENT SYSTEM MODELS
+// =============================================
+
+model LeaveApplication {
+  id        String      @id @default(cuid())
+  tenantId  String
+  teacherId String
+  startDate DateTime
+  endDate   DateTime
+  reason    String
+  status    LeaveStatus @default(PENDING)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId])
+  @@index([teacherId])
+}
+
+enum LeaveStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model TeacherSalaryLedger {
+  id         String       @id @default(cuid())
+  tenantId   String
+  teacherId  String
+  month      Int
+  year       Int
+  baseSalary Float
+  deductions Float        @default(0)
+  netPayable Float
+  status     SalaryStatus @default(UNPAID)
+  paidDate   DateTime?
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+
+  @@unique([teacherId, month, year])
+  @@index([tenantId])
+  @@index([teacherId])
+}
+
+enum SalaryStatus {
+  UNPAID
+  PAID
+}
+
+model TimeTable {
+  id        String          @id @default(cuid())
+  tenantId  String
+  teacherId String
+  courseId  String?
+  batchId   String?
+  subject   String
+  dayOfWeek Int // 1=Monday, 7=Sunday
+  startTime String // HH:mm
+  endTime   String // HH:mm
+  status    TimeTableStatus @default(PENDING_APPROVAL)
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  teacher Teacher @relation(fields: [teacherId], references: [id], onDelete: Cascade)
+  course  Course? @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  batch   Batch?  @relation(fields: [batchId], references: [id], onDelete: SetNull)
+
+  @@index([tenantId])
+  @@index([teacherId])
+}
+
+enum TimeTableStatus {
+  DRAFT
+  PENDING_APPROVAL
+  PUBLISHED
 }
