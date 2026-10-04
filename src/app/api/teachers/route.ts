@@ -8,10 +8,12 @@ export async function GET(req: NextRequest) {
     if (error) return error
 
     try {
+        console.log(`[API GET /teachers] Fetching teachers for tenant: ${user!.tenantId}`)
         const teachers = await prisma.teacher.findMany({
             where: { tenantId: user!.tenantId },
             orderBy: { createdAt: 'desc' }
         })
+        console.log(`[API GET /teachers] Found ${teachers.length} teachers`)
 
         // Include plan limit info in response
         const limitCheck = await checkPlanLimit(user!.tenantId, 'maxTeachers', teachers.length)
@@ -53,6 +55,7 @@ export async function POST(req: NextRequest) {
         }
 
         const body = await req.json()
+        console.log('[API POST /teachers] Received payload:', body)
         const { name, email, phone, subject, salary, joinDate } = body
 
         if (!name || !phone) {
@@ -71,11 +74,12 @@ export async function POST(req: NextRequest) {
                 isActive: true,
             }
         })
+        console.log('[API POST /teachers] Successfully created teacher:', teacher.id)
 
         return NextResponse.json({ success: true, data: teacher }, { status: 201 })
-    } catch (err) {
+    } catch (err: any) {
         console.error('Create teacher error:', err)
-        return NextResponse.json({ error: 'Failed to create teacher' }, { status: 500 })
+        return NextResponse.json({ error: `Failed to create teacher: ${err?.message || 'Unknown error'}` }, { status: 500 })
     }
 }
 
