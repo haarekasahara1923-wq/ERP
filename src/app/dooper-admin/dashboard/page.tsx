@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 interface Tenant {
   id: string
@@ -204,11 +205,20 @@ export default function DooperDashboard() {
 
       {/* Header */}
       <header style={{ position: 'sticky', top: 0, zIndex: 100, background: 'rgba(4,3,10,0.95)', backdropFilter: 'blur(20px)', borderBottom: '1px solid rgba(220,38,38,0.15)', padding: '0 24px', height: '60px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
           <div style={{ width: '36px', height: '36px', background: 'linear-gradient(135deg, #dc2626, #991b1b)', borderRadius: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px' }}>👁️</div>
           <div>
             <div style={{ fontSize: '15px', fontWeight: '800', color: 'white', lineHeight: 1 }}>Scalevo</div>
             <div style={{ fontSize: '10px', color: '#f87171', fontWeight: '600', letterSpacing: '1px' }}>DOOPER ADMIN</div>
+          </div>
+          {/* ── Navigation Pills ── */}
+          <div style={{ display: 'flex', gap: '8px', marginLeft: '8px' }}>
+            <span style={{ padding: '6px 14px', background: 'linear-gradient(135deg,#dc2626,#991b1b)', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: 'white' }}>
+              🏫 All Schools
+            </span>
+            <Link href="/dooper-admin/dashboard/staff" style={{ padding: '6px 14px', background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.35)', borderRadius: '8px', fontSize: '12px', fontWeight: '700', color: '#c4b5fd', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '5px' }}>
+              👥 All Staff
+            </Link>
           </div>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
@@ -239,6 +249,12 @@ export default function DooperDashboard() {
               <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', fontWeight: '600' }}>{s.label}</div>
             </div>
           ))}
+          {/* Staff Quick Link Card */}
+          <Link href="/dooper-admin/dashboard/staff" style={{ background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.2)', borderRadius: '14px', padding: '20px', borderLeft: '3px solid #a78bfa', textDecoration: 'none', display: 'block', cursor: 'pointer', transition: 'border-color 0.2s' }}>
+            <div style={{ fontSize: '28px', marginBottom: '6px' }}>👥</div>
+            <div style={{ fontSize: '20px', fontWeight: '900', color: '#c4b5fd', lineHeight: 1 }}>View →</div>
+            <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.4)', marginTop: '4px', fontWeight: '600' }}>All Staff</div>
+          </Link>
         </div>
 
         {/* Table */}
