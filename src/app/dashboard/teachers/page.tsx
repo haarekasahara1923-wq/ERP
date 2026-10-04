@@ -352,7 +352,7 @@ export default function StaffManagementPage() {
 
             {/* ── Toast ── */}
             {toast.text && (
-                <div className="slide-in" style={{ marginBottom: '16px', padding: '12px 16px', borderRadius: '10px', fontSize: '13px', fontWeight: '600', background: toast.type === 'success' ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, color: toast.type === 'success' ? '#10b981' : '#ef4444' }}>
+                <div className="slide-in" style={{ position: 'fixed', top: '20px', right: '20px', zIndex: 99999, maxWidth: '420px', padding: '14px 18px', borderRadius: '12px', fontSize: '13px', fontWeight: '600', background: toast.type === 'success' ? '#052e22' : '#3b0d0d', border: `1px solid ${toast.type === 'success' ? 'rgba(16,185,129,0.6)' : 'rgba(239,68,68,0.6)'}`, color: toast.type === 'success' ? '#34d399' : '#fca5a5', boxShadow: '0 10px 30px rgba(0,0,0,0.5)', wordBreak: 'break-word' }}>
                     {toast.type === 'success' ? '✅' : '⚠️'} {toast.text}
                 </div>
             )}
