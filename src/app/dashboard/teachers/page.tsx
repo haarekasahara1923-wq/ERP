@@ -130,7 +130,7 @@ export default function StaffManagementPage() {
     const fetchStaff = useCallback(async () => {
         if (!token) return
         setLoading(true)
-        const d = await apiFetch('/api/teachers')
+        const d = await apiFetch(`/api/teachers?_t=${Date.now()}`)
         if (d.success) setStaff(d.data || [])
         setLoading(false)
     }, [token, apiFetch])
