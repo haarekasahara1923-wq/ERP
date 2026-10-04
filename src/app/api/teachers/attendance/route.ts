@@ -90,7 +90,7 @@ export async function POST(req: NextRequest) {
                     inTime: inTime !== undefined ? inTime : existing.inTime,
                     outTime: outTime !== undefined ? outTime : existing.outTime,
                     notes: notes !== undefined ? notes : existing.notes,
-                    markedBy: user!.name
+                    markedBy: (user as any).name || 'System'
                 }
             })
         } else {
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
                     inTime,
                     outTime,
                     notes,
-                    markedBy: user!.name
+                    markedBy: (user as any).name || 'System'
                 }
             })
         }
