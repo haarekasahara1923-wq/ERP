@@ -123,7 +123,7 @@ export default function StaffManagementPage() {
 
     /* ── Fetch helpers ─────────────────────────── */
     const apiFetch = useCallback(async (url: string, opts?: RequestInit) => {
-        const res = await fetch(url, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts?.headers || {}) } })
+        const res = await fetch(url, { ...opts, cache: 'no-store', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...(opts?.headers || {}) } })
         return res.json()
     }, [token])
 
