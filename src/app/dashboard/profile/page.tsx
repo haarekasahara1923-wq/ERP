@@ -10,7 +10,9 @@ export default function ProfilePage() {
         email: tenant?.email || '',
         address: tenant?.address || '',
         themeColor: tenant?.themeColor || '#6366f1',
-        logo: tenant?.logo || ''
+        logo: tenant?.logo || '',
+        registrationCode: tenant?.registrationCode || '',
+        diseCode: tenant?.diseCode || ''
     })
     const [saved, setSaved] = useState(false)
     const [loading, setLoading] = useState(false)
@@ -82,6 +84,14 @@ export default function ProfilePage() {
                                 <input className="input" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
                             </div>
                             <div>
+                                <label className="label">School Code (Registration)</label>
+                                <input className="input" value={form.registrationCode} onChange={e => setForm({ ...form, registrationCode: e.target.value })} />
+                            </div>
+                            <div>
+                                <label className="label">DISE Code</label>
+                                <input className="input" value={form.diseCode} onChange={e => setForm({ ...form, diseCode: e.target.value })} />
+                            </div>
+                            <div>
                                 <label className="label">Phone Number</label>
                                 <input className="input" type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
                             </div>
@@ -141,6 +151,9 @@ export default function ProfilePage() {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                             {[
                                 { label: 'Tenant ID', value: user?.tenantId?.slice(0, 12) + '...' || '' },
+                                { label: 'School Code (App)', value: tenant?.schoolCode || 'N/A' },
+                                { label: 'Registration Code', value: tenant?.registrationCode || 'N/A' },
+                                { label: 'DISE Code', value: tenant?.diseCode || 'N/A' },
                                 { label: 'Platform', value: 'UDBA v2.0' },
                                 { label: 'Region', value: 'India (Asia-South)' },
                             ].map(i => (

@@ -8,6 +8,8 @@ interface Tenant {
   name: string
   slug: string
   schoolCode: string | null
+  registrationCode: string | null
+  diseCode: string | null
   email: string
   phone: string
   address: string
@@ -479,22 +481,58 @@ export default function DooperDashboard() {
               </p>
             </div>
 
-            {/* Big School Code Display */}
-            <div style={{ background: 'rgba(251,191,36,0.08)', border: '2px solid rgba(251,191,36,0.4)', borderRadius: '16px', padding: '24px', textAlign: 'center', marginBottom: '24px' }}>
-              <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(251,191,36,0.6)', letterSpacing: '3px', textTransform: 'uppercase', marginBottom: '10px' }}>Unique School ID</div>
-              <div style={{ fontSize: '36px', fontWeight: '900', color: '#fbbf24', fontFamily: 'monospace', letterSpacing: '4px', marginBottom: '16px' }}>
-                {selectedTenant.schoolCode}
+            {/* All 3 Codes Display */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '24px' }}>
+              <div style={{ background: 'rgba(251,191,36,0.08)', border: '2px solid rgba(251,191,36,0.4)', borderRadius: '16px', padding: '16px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(251,191,36,0.6)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>App School ID</div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: '#fbbf24', fontFamily: 'monospace', marginBottom: '16px' }}>
+                  {selectedTenant.schoolCode || 'N/A'}
+                </div>
+                <button
+                  onClick={() => selectedTenant.schoolCode && copyToClipboard(selectedTenant.schoolCode, 'code')}
+                  style={{
+                    padding: '8px 16px', background: copiedCode === 'code' ? 'rgba(16,185,129,0.2)' : 'rgba(251,191,36,0.15)',
+                    border: `1px solid ${copiedCode === 'code' ? 'rgba(16,185,129,0.5)' : 'rgba(251,191,36,0.4)'}`,
+                    borderRadius: '8px', color: copiedCode === 'code' ? '#34d399' : '#fbbf24',
+                    fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px'
+                  }}>
+                  {copiedCode === 'code' ? '✅ Copied!' : '📋 Copy'}
+                </button>
               </div>
-              <button
-                onClick={() => copyToClipboard(selectedTenant.schoolCode!, 'code')}
-                style={{
-                  padding: '10px 24px', background: copiedCode === 'code' ? 'rgba(16,185,129,0.2)' : 'rgba(251,191,36,0.15)',
-                  border: `1px solid ${copiedCode === 'code' ? 'rgba(16,185,129,0.5)' : 'rgba(251,191,36,0.4)'}`,
-                  borderRadius: '10px', color: copiedCode === 'code' ? '#34d399' : '#fbbf24',
-                  fontSize: '14px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px'
-                }}>
-                {copiedCode === 'code' ? '✅ Copied!' : '📋 Copy School ID'}
-              </button>
+
+              <div style={{ background: 'rgba(16,185,129,0.08)', border: '2px solid rgba(16,185,129,0.4)', borderRadius: '16px', padding: '16px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(16,185,129,0.6)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>Registration Code</div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: '#10b981', fontFamily: 'monospace', marginBottom: '16px' }}>
+                  {selectedTenant.registrationCode || 'N/A'}
+                </div>
+                <button
+                  onClick={() => selectedTenant.registrationCode && copyToClipboard(selectedTenant.registrationCode, 'regCode')}
+                  style={{
+                    padding: '8px 16px', background: copiedCode === 'regCode' ? 'rgba(16,185,129,0.2)' : 'rgba(16,185,129,0.15)',
+                    border: `1px solid ${copiedCode === 'regCode' ? 'rgba(16,185,129,0.5)' : 'rgba(16,185,129,0.4)'}`,
+                    borderRadius: '8px', color: '#10b981',
+                    fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px'
+                  }}>
+                  {copiedCode === 'regCode' ? '✅ Copied!' : '📋 Copy'}
+                </button>
+              </div>
+
+              <div style={{ background: 'rgba(99,102,241,0.08)', border: '2px solid rgba(99,102,241,0.4)', borderRadius: '16px', padding: '16px', textAlign: 'center' }}>
+                <div style={{ fontSize: '11px', fontWeight: '700', color: 'rgba(99,102,241,0.6)', letterSpacing: '1px', textTransform: 'uppercase', marginBottom: '10px' }}>DISE Code</div>
+                <div style={{ fontSize: '18px', fontWeight: '900', color: '#818cf8', fontFamily: 'monospace', marginBottom: '16px' }}>
+                  {selectedTenant.diseCode || 'N/A'}
+                </div>
+                <button
+                  onClick={() => selectedTenant.diseCode && copyToClipboard(selectedTenant.diseCode, 'diseCode')}
+                  style={{
+                    padding: '8px 16px', background: copiedCode === 'diseCode' ? 'rgba(16,185,129,0.2)' : 'rgba(99,102,241,0.15)',
+                    border: `1px solid ${copiedCode === 'diseCode' ? 'rgba(16,185,129,0.5)' : 'rgba(99,102,241,0.4)'}`,
+                    borderRadius: '8px', color: copiedCode === 'diseCode' ? '#34d399' : '#818cf8',
+                    fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'inline-flex', alignItems: 'center', gap: '8px'
+                  }}>
+                  {copiedCode === 'diseCode' ? '✅ Copied!' : '📋 Copy'}
+                </button>
+              </div>
             </div>
 
             {/* Instructions */}
