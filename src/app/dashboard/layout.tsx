@@ -105,6 +105,18 @@ const adminTransportNav = [
     },
 ]
 
+const teacherSelfNav = [
+    {
+        group: 'MY PANEL', items: [
+            { href: '/dashboard/teacher-portal', icon: '🏠', label: 'My Dashboard' },
+            { href: '/dashboard/teacher-portal/attendance', icon: '✅', label: 'My Attendance' },
+            { href: '/dashboard/teacher-portal/leaves', icon: '📋', label: 'Apply Leave' },
+            { href: '/dashboard/teacher-portal/timetable', icon: '📅', label: 'My Schedule' },
+            { href: '/dashboard/teacher-portal/salary', icon: '💰', label: 'Salary Ledger' },
+        ]
+    },
+]
+
 const getNavForRole = (role: string) => {
     if (role === 'SUPER_ADMIN' || role === 'COACHING_ADMIN') {
         const nav = JSON.parse(JSON.stringify(navItems))
@@ -119,6 +131,7 @@ const getNavForRole = (role: string) => {
     if (role === 'ADMIN_LIBRARY') return adminLibraryNav
     if (role === 'ADMIN_SPORTS') return adminSportsNav
     if (role === 'ADMIN_TRANSPORT') return adminTransportNav
+    if (role === 'TEACHER') return teacherSelfNav
     return navItems
 }
 

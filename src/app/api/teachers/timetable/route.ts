@@ -35,16 +35,29 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { error, user } = requireWriteAccess(req)
+    const { error, user } = requireAuth(req)
     if (error) return error
 
     try {
         const body = await req.json()
-        const { teacherId, courseId, batchId, subject, dayOfWeek, startTime, endTime } = body
+        let { teacherId, courseId, batchId, subject, dayOfWeek, startTime, endTime } = body
+
+        // If a TEACHER is posting, auto-resolve their teacherId
+        if (user!.role === 'TEACHER') {
+            const teacherProfile = await prisma.teacher.findFirst({
+                where: { tenantId: user!.tenantId, userId: user!.userId }
+            })
+            if (!teacherProfile) {
+                return NextResponse.json({ error: 'Teacher profile not linked to your account' }, { status: 403 })
+            }
+            teacherId = teacherProfile.id
+        }
 
         if (!teacherId || !subject || dayOfWeek === undefined || !startTime || !endTime) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
         }
+
+        const isAdmin = user!.role === 'SUPER_ADMIN' || user!.role === 'COACHING_ADMIN'
 
         const tt = await prisma.timeTable.create({
             data: {
@@ -56,7 +69,7 @@ export async function POST(req: NextRequest) {
                 dayOfWeek: parseInt(dayOfWeek),
                 startTime,
                 endTime,
-                status: user!.role === 'SUPER_ADMIN' ? 'PUBLISHED' : 'PENDING_APPROVAL'
+                status: isAdmin ? 'PUBLISHED' : 'PENDING_APPROVAL'
             }
         })
 

@@ -51,16 +51,40 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { error, user } = requireWriteAccess(req)
+    const { error, user } = requireAuth(req)
     if (error) return error
+
+    const isAdmin = user!.role === 'SUPER_ADMIN' || user!.role === 'COACHING_ADMIN' || user!.role === 'ADMIN_OPERATION'
+    const isTeacher = user!.role === 'TEACHER'
 
     try {
         const body = await req.json()
-        const { teacherId, date, status, inTime, outTime, notes } = body
+        let { teacherId, date, status, inTime, outTime, notes } = body
 
-        if (!teacherId || !date || !status) {
-            return NextResponse.json({ error: 'teacherId, date, and status are required' }, { status: 400 })
+        // If teacher is marking their own attendance
+        if (isTeacher) {
+            // Look up this user's teacher profile
+            const teacherProfile = await prisma.teacher.findFirst({
+                where: { tenantId: user!.tenantId, userId: user!.userId }
+            })
+            if (!teacherProfile) {
+                return NextResponse.json({ error: 'Teacher profile not linked to your account' }, { status: 403 })
+            }
+            teacherId = teacherProfile.id
+            // Teachers can only mark themselves PRESENT with in/out times (admin sets status)
+            if (!inTime && !outTime) {
+                status = 'PRESENT'
+            }
+        } else if (!isAdmin) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 403 })
         }
+
+        if (!teacherId || !date) {
+            return NextResponse.json({ error: 'teacherId and date are required' }, { status: 400 })
+        }
+
+        // Admin must provide status; teacher defaults to PRESENT
+        if (!status) status = 'PRESENT'
 
         const attendanceDate = new Date(date)
         attendanceDate.setHours(0, 0, 0, 0)

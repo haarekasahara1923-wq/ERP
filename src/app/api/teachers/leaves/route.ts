@@ -35,12 +35,23 @@ export async function GET(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-    const { error, user } = requireWriteAccess(req)
+    const { error, user } = requireAuth(req)
     if (error) return error
 
     try {
         const body = await req.json()
-        const { teacherId, startDate, endDate, reason } = body
+        let { teacherId, startDate, endDate, reason } = body
+
+        // If a TEACHER is posting, auto-resolve their teacherId from their profile
+        if (user!.role === 'TEACHER') {
+            const teacherProfile = await prisma.teacher.findFirst({
+                where: { tenantId: user!.tenantId, userId: user!.userId }
+            })
+            if (!teacherProfile) {
+                return NextResponse.json({ error: 'Teacher profile not linked to your account' }, { status: 403 })
+            }
+            teacherId = teacherProfile.id
+        }
 
         if (!teacherId || !startDate || !endDate || !reason) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
