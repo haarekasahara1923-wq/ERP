@@ -32,6 +32,8 @@ export default function AddStudentPage() {
     const [pdfLibReady, setPdfLibReady] = useState(false)
     const [showGovtModal, setShowGovtModal] = useState(false)
     const [govtDocs, setGovtDocs] = useState<Record<string, {name:string;data:string;type:string}[]>>({})
+    // Duplicate student popup state
+    const [duplicateInfo, setDuplicateInfo] = useState<null | { fullName: string; scholarNo: string; fatherName: string; studentId: string; createdAt: string }>(null)
 
     const [form, setForm] = useState({
         scholarNo: '', fullName: '', fatherName: '', motherName: '', phone: '', parentPhone: '',
@@ -62,6 +64,11 @@ export default function AddStudentPage() {
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        // Validate mandatory combination
+        if (!form.scholarNo.trim()) { setToast('Scholar No. is mandatory'); return }
+        if (!form.fullName.trim()) { setToast('Student Name is mandatory'); return }
+        if (!form.fatherName.trim()) { setToast("Father's Name is mandatory"); return }
+
         setLoading(true)
         const res = await fetch('/api/students', {
             method: 'POST',
@@ -73,6 +80,9 @@ export default function AddStudentPage() {
         if (data.success) {
             setSuccess(true); setToast('Student added successfully!')
             setTimeout(() => router.push('/dashboard/students'), 1500)
+        } else if (data.code === 'DUPLICATE_STUDENT') {
+            // Show duplicate popup
+            setDuplicateInfo(data.existingStudent)
         } else if (res.status === 401 || data?.error === 'Unauthorized') {
             handleUnauthorized()
         } else {
@@ -179,6 +189,43 @@ export default function AddStudentPage() {
             {toast && (
                 <div className={`toast ${success ? 'toast-success' : 'toast-error'}`} style={{ position: 'relative', marginBottom: '16px', maxWidth: '100%' }}>
                     {success ? '&#x2713;' : '&#x26A0;&#xFE0F;'} {toast}
+                </div>
+            )}
+
+            {/* Duplicate Student Warning Modal */}
+            {duplicateInfo && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+                    <div style={{ background: 'var(--surface)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: '20px', padding: '32px', maxWidth: '480px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
+                        <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                            <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚠️</div>
+                            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#ef4444', marginBottom: '8px' }}>Duplicate Student Detected!</h2>
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>A student with the same Scholar No., Name, and Father&apos;s Name already exists in the system.</p>
+                        </div>
+                        <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {[
+                                    { label: 'Student ID', value: duplicateInfo.studentId },
+                                    { label: 'Full Name', value: duplicateInfo.fullName },
+                                    { label: 'Scholar No.', value: duplicateInfo.scholarNo },
+                                    { label: "Father's Name", value: duplicateInfo.fatherName },
+                                    { label: 'Added On', value: new Date(duplicateInfo.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) },
+                                ].map(row => (
+                                    <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', minWidth: '110px' }}>{row.label}</span>
+                                        <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', textAlign: 'right' }}>{row.value}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                            <button onClick={() => setDuplicateInfo(null)} className="btn btn-secondary" style={{ flex: 1 }}>
+                                ✏️ Edit Form
+                            </button>
+                            <button onClick={() => { setDuplicateInfo(null); window.location.href = '/dashboard/students' }} className="btn" style={{ flex: 1, background: 'linear-gradient(135deg,#ef4444,#b91c1c)', color: 'white', border: 'none' }}>
+                                📋 View Existing
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
 

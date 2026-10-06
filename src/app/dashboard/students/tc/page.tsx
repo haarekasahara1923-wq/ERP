@@ -4,7 +4,7 @@ import { useAuth, useApi } from '@/contexts/AuthContext'
 import html2pdf from 'html2pdf.js'
 
 export default function GenerateTCPage() {
-    const { tenant, token, handleUnauthorized } = useAuth()
+    const { tenant, token, user, handleUnauthorized } = useAuth()
 
     const [courses, setCourses] = useState<any[]>([])
     const [batches, setBatches] = useState<any[]>([])
@@ -99,8 +99,33 @@ export default function GenerateTCPage() {
     const selectedCourse = courses.find(c => c.id === selectedCourseId)
     const isHigherSec = selectedCourse && (selectedCourse.classGroup === 'Higher Sec' || selectedCourse.classGroup === 'Seinor Hr Secondary' || selectedCourse.name.includes('11') || selectedCourse.name.includes('12'))
 
-    const generatePDF = () => {
+    const validateTC = async () => {
+        if (!studentData) return false
+        const res = await fetch('/api/students/tc', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({
+                studentId: studentData.id,
+                scholarNo: studentData.scholarNo || '',
+                studentName: studentData.fullName,
+                fatherName: studentData.fatherName || '',
+                tcNumber: tcDetails.tcNumber
+            })
+        })
+        const data = await res.json()
+        if (!data.success) {
+            setErrorMsg(data.error || 'Failed to validate TC')
+            return false
+        }
+        return true
+    }
+
+    const generatePDF = async () => {
         if (!tcRef.current) return
+        setErrorMsg('')
+        const isValid = await validateTC()
+        if (!isValid) return
+
         const element = tcRef.current
         const opt = {
             margin: 0,
@@ -112,8 +137,12 @@ export default function GenerateTCPage() {
         html2pdf().set(opt).from(element).save()
     }
 
-    const generateDOCX = () => {
+    const generateDOCX = async () => {
         if (!tcRef.current) return
+        setErrorMsg('')
+        const isValid = await validateTC()
+        if (!isValid) return
+
         const header = "<html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'><head><meta charset='utf-8'><title>Export HTML to Word Document with JavaScript</title></head><body>";
         const footer = "</body></html>";
         const sourceHTML = header + tcRef.current.innerHTML + footer;
@@ -125,6 +154,16 @@ export default function GenerateTCPage() {
         fileDownload.download = `TC_${studentData?.fullName || 'Student'}.doc`;
         fileDownload.click();
         document.body.removeChild(fileDownload);
+    }
+
+    if (user?.role !== 'SUPER_ADMIN') {
+        return (
+            <div style={{ padding: '60px 24px', textAlign: 'center', maxWidth: '1200px', margin: '0 auto' }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>⚠️</div>
+                <h1 style={{ marginBottom: '16px', fontSize: '24px', fontWeight: '600', color: '#ef4444' }}>Access Denied</h1>
+                <p style={{ color: 'var(--text-muted)' }}>Only Super Admin can generate Transfer Certificates.</p>
+            </div>
+        )
     }
 
     return (

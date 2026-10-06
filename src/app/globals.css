@@ -39,6 +39,50 @@ body {
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
   overflow-x: hidden;
+  /* Screenshot prevention: disable text/content selection globally */
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+/* Allow selection only in input fields and textareas */
+input, textarea, select, [contenteditable="true"] {
+  -webkit-user-select: text;
+  -moz-user-select: text;
+  -ms-user-select: text;
+  user-select: text;
+}
+
+/* Screenshot prevention: hide all content when printing (blocks print-screen-to-PDF) */
+@media print {
+  body * {
+    visibility: hidden !important;
+    display: none !important;
+  }
+  /* Allow only elements explicitly marked as printable */
+  .printable-area, .printable-area * {
+    visibility: visible !important;
+    display: block !important;
+  }
+  .printable-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+}
+
+/* Screen capture / screen share black overlay protection */
+.screenshot-shield {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: #000;
+  z-index: 2147483647;
+}
+.screenshot-shield.active {
+  display: block;
 }
 
 /* Scrollbar */

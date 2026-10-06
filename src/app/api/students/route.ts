@@ -97,6 +97,32 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Required fields missing' }, { status: 400 })
         }
 
+        // ── Duplicate check: Scholar No + Full Name + Father Name (case-insensitive) ──
+        if (scholarNo && fullName && fatherName) {
+            const duplicate = await prisma.student.findFirst({
+                where: {
+                    tenantId: user!.tenantId,
+                    scholarNo: { equals: scholarNo.trim(), mode: 'insensitive' },
+                    fullName: { equals: fullName.trim(), mode: 'insensitive' },
+                    fatherName: { equals: fatherName.trim(), mode: 'insensitive' },
+                }
+            })
+            if (duplicate) {
+                return NextResponse.json({
+                    error: `Student already exists! A student named "${duplicate.fullName}" with Scholar No. "${duplicate.scholarNo}" and Father's Name "${duplicate.fatherName}" was previously added on ${new Date(duplicate.createdAt).toLocaleDateString('en-IN')}.`,
+                    code: 'DUPLICATE_STUDENT',
+                    existingStudent: {
+                        id: duplicate.id,
+                        fullName: duplicate.fullName,
+                        scholarNo: duplicate.scholarNo,
+                        fatherName: duplicate.fatherName,
+                        studentId: duplicate.studentId,
+                        createdAt: duplicate.createdAt,
+                    }
+                }, { status: 409 })
+            }
+        }
+
         const course = await prisma.course.findUnique({
             where: { id: courseId, tenantId: user!.tenantId }
         })

@@ -27,24 +27,24 @@ model DooperAdmin {
 }
 
 model Tenant {
-  id           String    @id @default(cuid())
-  name         String
-  slug         String    @unique
-  schoolCode   String?   @unique // Unique School ID e.g. SCL-2026-ABCD
+  id               String    @id @default(cuid())
+  name             String
+  slug             String    @unique
+  schoolCode       String?   @unique // Unique School ID e.g. SCL-2026-ABCD
   registrationCode String? // School Registration/Code
-  diseCode     String?   // UDISE/DISE Code
-  logo         String?
-  themeColor   String    @default("#6366f1")
-  address      String?
-  phone        String?
-  email        String?
-  website      String?
-  gstNumber    String?
-  directorSign String?
-  isActive     Boolean   @default(true)
-  trialEndsAt  DateTime?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  diseCode         String? // UDISE/DISE Code
+  logo             String?
+  themeColor       String    @default("#6366f1")
+  address          String?
+  phone            String?
+  email            String?
+  website          String?
+  gstNumber        String?
+  directorSign     String?
+  isActive         Boolean   @default(true)
+  trialEndsAt      DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 
   // School Director/Contact info (captured at signup)
   directorName  String?
@@ -107,6 +107,7 @@ model Tenant {
   leaveApplications    LeaveApplication[]
   teacherSalaryLedgers TeacherSalaryLedger[]
   timeTables           TimeTable[]
+  transferCertificates TransferCertificate[]
 }
 
 model Affiliate {
@@ -354,21 +355,22 @@ model Student {
   createdAt           DateTime      @default(now())
   updatedAt           DateTime      @updatedAt
 
-  tenant              Tenant               @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  course              Course               @relation(fields: [courseId], references: [id])
-  batch               Batch                @relation(fields: [batchId], references: [id])
-  branch              Branch?              @relation(fields: [branchId], references: [id])
-  userAccount         User?                @relation(fields: [userId], references: [id])
-  fees                Fee[]
-  attendances         Attendance[]
-  results             Result[]
-  payments            Payment[]
-  vehicleId           String?
-  vehicle             Vehicle?             @relation(fields: [vehicleId], references: [id])
-  transportLogs       TransportLog[]
-  homeworkSubmissions HomeworkSubmission[]
-  parentLinks         ParentProfile[]      @relation("ParentChildren")
-  examResults         ExamResult[]
+  tenant               Tenant                @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  course               Course                @relation(fields: [courseId], references: [id])
+  batch                Batch                 @relation(fields: [batchId], references: [id])
+  branch               Branch?               @relation(fields: [branchId], references: [id])
+  userAccount          User?                 @relation(fields: [userId], references: [id])
+  fees                 Fee[]
+  attendances          Attendance[]
+  results              Result[]
+  payments             Payment[]
+  vehicleId            String?
+  vehicle              Vehicle?              @relation(fields: [vehicleId], references: [id])
+  transportLogs        TransportLog[]
+  homeworkSubmissions  HomeworkSubmission[]
+  parentLinks          ParentProfile[]       @relation("ParentChildren")
+  examResults          ExamResult[]
+  transferCertificates TransferCertificate[]
 
   @@index([tenantId])
   @@index([tenantId, fullName])
@@ -1133,4 +1135,22 @@ enum TimeTableStatus {
   DRAFT
   PENDING_APPROVAL
   PUBLISHED
+}
+
+model TransferCertificate {
+  id          String   @id @default(cuid())
+  tenantId    String
+  studentId   String
+  scholarNo   String
+  studentName String
+  fatherName  String?
+  tcNumber    String
+  issueDate   DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  tenant  Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  student Student @relation(fields: [studentId], references: [id])
+
+  @@unique([tenantId, studentId])
+  @@unique([tenantId, scholarNo, studentName, fatherName])
 }
