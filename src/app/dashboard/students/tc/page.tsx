@@ -22,7 +22,7 @@ export default function GenerateTCPage() {
         attendance: 'Whole',
         accountsClearance: 'Clear',
         issueDate: '',
-        tcNumber: `TC-${new Date().getFullYear()}-${Math.floor(Math.random() * 10000)}`,
+        tcNumber: '',
         reason: 'Passed highest class',
         character: 'Good',
         result: 'Pass'
@@ -44,13 +44,22 @@ export default function GenerateTCPage() {
                     if (!r.ok) throw new Error(`Batches HTTP ${r.status}`);
                     return r.json();
                 }),
-        ]).then(([c, b]) => {
-            setDebugInfo(`Courses API success: ${c.success}, Batches API success: ${b.success}`);
+            fetch('/api/students/tc', { headers: { Authorization: `Bearer ${token}` }, cache: 'no-store' })
+                .then(r => {
+                    if (!r.ok) throw new Error(`TC HTTP ${r.status}`);
+                    return r.json();
+                }),
+        ]).then(([c, b, tc]) => {
+            setDebugInfo(`Courses: ${c.success}, Batches: ${b.success}, TC: ${tc.success}`);
             if (c.success) setCourses(c.data)
             else setErrorMsg(`Courses Error: ${c.error}`)
             
             if (b.success) setBatches(b.data)
             else setErrorMsg(prev => prev + ` Batches Error: ${b.error}`)
+
+            if (tc.success) {
+                setTcDetails(prev => ({ ...prev, tcNumber: tc.nextTcNumber }))
+            }
         }).catch(err => {
             console.error(err)
             setErrorMsg(`Network Error: ${err.message}`)
@@ -100,12 +109,13 @@ export default function GenerateTCPage() {
     const isHigherSec = selectedCourse && (selectedCourse.classGroup === 'Higher Secondary' || selectedCourse.name.includes('11') || selectedCourse.name.includes('12'))
 
     // Build individual Govt ID rows from student data
+    // Use .trim() to handle empty strings stored in DB
     const govtIdRows: { label: string; value: string }[] = []
     if (studentData) {
-        if (studentData.aadhaarNo) govtIdRows.push({ label: 'Aadhaar No:', value: studentData.aadhaarNo })
-        if (studentData.samagraId) govtIdRows.push({ label: 'Samagra ID:', value: studentData.samagraId })
-        if (studentData.penId)     govtIdRows.push({ label: 'PEN ID:', value: studentData.penId })
-        if (studentData.aparId)    govtIdRows.push({ label: 'APAR ID:', value: studentData.aparId })
+        if (studentData.aadhaarNo?.trim()) govtIdRows.push({ label: 'Aadhaar No:', value: studentData.aadhaarNo.trim() })
+        if (studentData.samagraId?.trim()) govtIdRows.push({ label: 'Samagra ID:', value: studentData.samagraId.trim() })
+        if (studentData.penId?.trim())     govtIdRows.push({ label: 'PEN ID:', value: studentData.penId.trim() })
+        if (studentData.aparId?.trim())    govtIdRows.push({ label: 'APAR ID:', value: studentData.aparId.trim() })
         if (govtIdRows.length === 0) govtIdRows.push({ label: 'Government IDs:', value: 'N/A' })
     }
 

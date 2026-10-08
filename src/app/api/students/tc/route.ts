@@ -1,6 +1,49 @@
+export const dynamic = 'force-dynamic'
 import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { requireAuth } from '@/app/api/middleware'
+
+/**
+ * GET /api/students/tc
+ * Returns the next sequential TC number for this tenant.
+ * Format: TC-YYYY-NNNN  (e.g. TC-2026-0001, TC-2026-0002 …)
+ */
+export async function GET(req: NextRequest) {
+    const { error, user } = requireAuth(req)
+    if (error) return error
+
+    if (user!.role !== 'SUPER_ADMIN') {
+        return NextResponse.json({ error: 'Only Super Admin can access TC data' }, { status: 403 })
+    }
+
+    try {
+        const year = new Date().getFullYear()
+
+        // Find the last TC issued for this tenant in the current year
+        const lastTc = await prisma.transferCertificate.findFirst({
+            where: {
+                tenantId: user!.tenantId,
+                tcNumber: { startsWith: `TC-${year}-` }
+            },
+            orderBy: { createdAt: 'desc' }
+        })
+
+        let nextSeq = 1
+        if (lastTc?.tcNumber) {
+            // Parse the sequence number from "TC-YYYY-NNNN"
+            const parts = lastTc.tcNumber.split('-')
+            const lastSeq = parseInt(parts[parts.length - 1], 10)
+            if (!isNaN(lastSeq)) nextSeq = lastSeq + 1
+        }
+
+        const nextTcNumber = `TC-${year}-${String(nextSeq).padStart(4, '0')}`
+
+        return NextResponse.json({ success: true, nextTcNumber })
+    } catch (err) {
+        console.error('TC Number fetch error:', err)
+        return NextResponse.json({ error: 'Failed to generate TC number' }, { status: 500 })
+    }
+}
 
 export async function POST(req: NextRequest) {
     const { error, user } = requireAuth(req)
