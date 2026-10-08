@@ -342,11 +342,11 @@ export default function AddStudentPage() {
                         }} /></Field>
                         <Field label="Subject Group">
                             {(() => {
-                                const isSenior = (selectedCourse as any)?.classGroup === 'Senior Hr Secondary'
+                                const isSenior = (selectedCourse as any)?.classGroup === 'Higher Secondary'
                                 return (<select className="input" value={form.subjectGroup} onChange={e => setForm({ ...form, subjectGroup: e.target.value })} disabled={!isSenior} style={{ opacity: isSenior ? 1 : 0.5, cursor: isSenior ? 'pointer' : 'not-allowed' }}>
                                     <option value="">{isSenior ? 'Select Subject Group' : 'Only for Class 11 & 12'}</option>
                                     <option value="Science Bio">Science Bio</option><option value="Science Maths">Science Maths</option>
-                                    <option value="Arts">Arts</option><option value="Commerce">Commerce</option>
+                                    <option value="Arts">Arts</option><option value="Commerce">Commerce</option><option value="Agriculture">Agriculture</option>
                                 </select>)
                             })()}
                         </Field>

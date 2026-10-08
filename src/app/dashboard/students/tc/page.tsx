@@ -71,7 +71,7 @@ export default function GenerateTCPage() {
                 if (res.success) {
                     let filtered = res.data;
                     const course = courses.find(c => c.id === selectedCourseId)
-                    const isHigherSec = course && (course.classGroup === 'Higher Sec' || course.classGroup === 'Seinor Hr Secondary' || course.name.includes('11') || course.name.includes('12'))
+                    const isHigherSec = course && (course.classGroup === 'Higher Secondary' || course.name.includes('11') || course.name.includes('12'))
                     if (isHigherSec && selectedSubjectGroup) {
                         filtered = filtered.filter((s: any) => s.subjectGroup === selectedSubjectGroup)
                     }
@@ -97,7 +97,7 @@ export default function GenerateTCPage() {
     }, [selectedStudentId])
 
     const selectedCourse = courses.find(c => c.id === selectedCourseId)
-    const isHigherSec = selectedCourse && (selectedCourse.classGroup === 'Higher Sec' || selectedCourse.classGroup === 'Seinor Hr Secondary' || selectedCourse.name.includes('11') || selectedCourse.name.includes('12'))
+    const isHigherSec = selectedCourse && (selectedCourse.classGroup === 'Higher Secondary' || selectedCourse.name.includes('11') || selectedCourse.name.includes('12'))
 
     const validateTC = async () => {
         if (!studentData) return false
@@ -206,6 +206,7 @@ export default function GenerateTCPage() {
                                 <option value="Science Bio">Science Bio</option>
                                 <option value="Arts">Arts</option>
                                 <option value="Commerce">Commerce</option>
+                                <option value="Agriculture">Agriculture</option>
                             </select>
                         </div>
                     )}
