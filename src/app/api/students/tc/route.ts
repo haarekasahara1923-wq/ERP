@@ -13,10 +13,20 @@ export async function POST(req: NextRequest) {
 
     try {
         const body = await req.json()
-        const { studentId, scholarNo, studentName, fatherName, tcNumber } = body
+        const { studentId, scholarNo, studentName, fatherName, tcNumber, issueDate } = body
 
         if (!studentId || !scholarNo || !studentName) {
             return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+        }
+
+        if (!issueDate) {
+            return NextResponse.json({ error: 'Date of Issue is required' }, { status: 400 })
+        }
+
+        // Parse the admin-provided date (format: YYYY-MM-DD)
+        const parsedIssueDate = new Date(issueDate + 'T00:00:00')
+        if (isNaN(parsedIssueDate.getTime())) {
+            return NextResponse.json({ error: 'Invalid Date of Issue' }, { status: 400 })
         }
 
         // Duplicate check
@@ -36,7 +46,7 @@ export async function POST(req: NextRequest) {
             }, { status: 409 })
         }
 
-        // Create TC record
+        // Create TC record with admin-provided issue date
         const tc = await prisma.transferCertificate.create({
             data: {
                 tenantId: user!.tenantId,
@@ -45,7 +55,7 @@ export async function POST(req: NextRequest) {
                 studentName,
                 fatherName: fatherName || '',
                 tcNumber,
-                issueDate: new Date(),
+                issueDate: parsedIssueDate,
             }
         })
 
