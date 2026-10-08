@@ -20,6 +20,45 @@ const GOVT_DOC_DEFS = [
     { label: 'Bank Passbook (First Page)', key: 'bankPassbook' },
 ]
 
+const convertDateToWords = (dateString: string) => {
+    if (!dateString) return '';
+    const [yearStr, monthStr, dayStr] = dateString.split('-');
+    if (!yearStr || !monthStr || !dayStr) return '';
+    
+    const day = parseInt(dayStr, 10);
+    const month = parseInt(monthStr, 10);
+    const year = parseInt(yearStr, 10);
+    if (isNaN(day) || isNaN(month) || isNaN(year)) return '';
+
+    const ordinals = [
+        "", "First", "Second", "Third", "Fourth", "Fifth", "Sixth", "Seventh", "Eighth", "Ninth", "Tenth",
+        "Eleventh", "Twelfth", "Thirteenth", "Fourteenth", "Fifteenth", "Sixteenth", "Seventeenth", "Eighteenth", "Nineteenth", "Twentieth",
+        "Twenty First", "Twenty Second", "Twenty Third", "Twenty Fourth", "Twenty Fifth", "Twenty Sixth", "Twenty Seventh", "Twenty Eighth", "Twenty Ninth", "Thirtieth",
+        "Thirty First"
+    ];
+    const months = ["", "January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+    const convertYearToWords = (y: number) => {
+        const units = ["", "One", "Two", "Three", "Four", "Five", "Six", "Seven", "Eight", "Nine", "Ten", "Eleven", "Twelve", "Thirteen", "Fourteen", "Fifteen", "Sixteen", "Seventeen", "Eighteen", "Nineteen"];
+        const tensWords = ["", "", "Twenty", "Thirty", "Forty", "Fifty", "Sixty", "Seventy", "Eighty", "Ninety"];
+        let res = "";
+        const thousands = Math.floor(y / 1000);
+        if (thousands > 0) { res += units[thousands] + " Thousand "; y %= 1000; }
+        const hundreds = Math.floor(y / 100);
+        if (hundreds > 0) { res += units[hundreds] + " Hundred "; y %= 100; }
+        if (y > 0) {
+            if (y < 20) { res += units[y]; } 
+            else {
+                res += tensWords[Math.floor(y / 10)];
+                if (y % 10 > 0) res += " " + units[y % 10];
+            }
+        }
+        return res.trim();
+    }
+
+    return `${ordinals[day]} ${months[month]} ${convertYearToWords(year)}`;
+}
+
 export default function AddStudentPage() {
     const { token, tenant, handleUnauthorized } = useAuth()
     const router = useRouter()
@@ -264,7 +303,10 @@ export default function AddStudentPage() {
                                 <option value="MALE">Male</option><option value="FEMALE">Female</option><option value="OTHER">Other</option>
                             </select>
                         </Field>
-                        <Field label="Date of Birth"><input className="input" type="date" value={form.dob} onChange={e => setForm({ ...form, dob: e.target.value })} /></Field>
+                        <Field label="Date of Birth"><input className="input" type="date" value={form.dob} onChange={e => {
+                            const val = e.target.value;
+                            setForm({ ...form, dob: val, dobInWords: convertDateToWords(val) });
+                        }} /></Field>
                         <Field label="Date of Birth (in words)"><input className="input" placeholder="First January Two Thousand" value={form.dobInWords} onChange={e => setForm({ ...form, dobInWords: e.target.value })} /></Field>
                         <Field label="Caste">
                             <select className="input" value={form.caste} onChange={e => setForm({ ...form, caste: e.target.value })}>
