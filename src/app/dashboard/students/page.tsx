@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 import Script from 'next/script'
@@ -41,6 +41,20 @@ interface Student {
     dob?: string
     address?: string
     motherName?: string
+    hasSiblings?: boolean
+}
+
+interface SiblingStudent {
+    siblingLinkId: string
+    id: string
+    fullName: string
+    scholarNo?: string
+    phone: string
+    courseName: string
+    batchName: string
+    totalFee: number
+    paidFee: number
+    status: string
 }
 
 const statusColors: Record<string, string> = {
@@ -60,6 +74,15 @@ export default function StudentsPage() {
     const [isEditing, setIsEditing] = useState(false)
     const [editForm, setEditForm] = useState<any>({})
     const [actionLoading, setActionLoading] = useState(false)
+
+    // Sibling states
+    const [showSiblingModal, setShowSiblingModal] = useState(false)
+    const [siblingSearch, setSiblingSearch] = useState('')
+    const [siblingSearchResults, setSiblingSearchResults] = useState<Student[]>([])
+    const [siblingSearchLoading, setSiblingSearchLoading] = useState(false)
+    const [currentSiblings, setCurrentSiblings] = useState<SiblingStudent[]>([])
+    const [siblingsLoading, setSiblingsLoading] = useState(false)
+    const [addingSibling, setAddingSibling] = useState(false)
 
     const downloadPDF = (elementId: string, title: string) => {
         const original = document.getElementById(elementId)
@@ -111,14 +134,32 @@ export default function StudentsPage() {
         window.html2pdf().set(opt).from(clone).save().then(() => document.body.removeChild(wrapper)).catch(() => document.body.removeChild(wrapper))
     }
 
-    const fetchStudents = async () => {
+    const fetchStudents = useCallback(async () => {
         if (!token) return
         const params = new URLSearchParams()
         if (search) params.set('search', search)
         const res = await fetch(`/api/students?${params}`, { headers: { Authorization: `Bearer ${token}` } })
         const data = await res.json()
-        if (data.success) setStudents(data.data)
+        if (data.success) {
+            // Fetch sibling counts to flag students that have siblings
+            const siblingRes = await fetch('/api/students/siblings/counts', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null)
+            const siblingData = siblingRes ? await siblingRes.json().catch(() => null) : null
+            const siblingSet: Set<string> = new Set(siblingData?.success ? siblingData.data : [])
+            setStudents(data.data.map((s: Student) => ({ ...s, hasSiblings: siblingSet.has(s.id) })))
+        }
         setLoading(false)
+    }, [token, search])
+
+    const fetchSiblingsForStudent = async (studentId: string) => {
+        setSiblingsLoading(true)
+        try {
+            const res = await fetch(`/api/students/siblings?studentId=${studentId}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            const data = await res.json()
+            if (data.success) setCurrentSiblings(data.data)
+        } catch (e) {}
+        setSiblingsLoading(false)
     }
 
     const handleDelete = async (id: string) => {
@@ -197,6 +238,68 @@ export default function StudentsPage() {
         setActionLoading(false)
     }
 
+    const searchSiblings = async () => {
+        if (!siblingSearch.trim()) return
+        setSiblingSearchLoading(true)
+        try {
+            const res = await fetch(`/api/students?search=${encodeURIComponent(siblingSearch)}`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            const data = await res.json()
+            if (data.success) {
+                // Exclude the current student and already-added siblings
+                const siblingIds = new Set(currentSiblings.map(s => s.id))
+                siblingIds.add(selectedStudent!.id)
+                setSiblingSearchResults(data.data.filter((s: Student) => !siblingIds.has(s.id)))
+            }
+        } catch (e) {}
+        setSiblingSearchLoading(false)
+    }
+
+    const handleAddSibling = async (siblingId: string) => {
+        if (addingSibling) return
+        setAddingSibling(true)
+        try {
+            const res = await fetch('/api/students/siblings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ studentId: selectedStudent!.id, siblingId })
+            })
+            const data = await res.json()
+            if (data.success) {
+                alert('Sibling added successfully!')
+                setSiblingSearch('')
+                setSiblingSearchResults([])
+                await fetchSiblingsForStudent(selectedStudent!.id)
+                await fetchStudents()
+            } else {
+                alert(data.error || 'Failed to add sibling')
+            }
+        } catch (e) {
+            alert('Error adding sibling')
+        }
+        setAddingSibling(false)
+    }
+
+    const handleRemoveSibling = async (linkId: string) => {
+        if (!confirm('Remove this sibling link?')) return
+        try {
+            const res = await fetch(`/api/students/siblings?linkId=${linkId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            const data = await res.json()
+            if (data.success) {
+                await fetchSiblingsForStudent(selectedStudent!.id)
+                await fetchStudents()
+            } else {
+                alert(data.error || 'Failed to remove sibling')
+            }
+        } catch (e) {
+            alert('Error removing sibling')
+        }
+    }
+
     useEffect(() => { fetchStudents() }, [token, search])
 
     return (
@@ -219,7 +322,7 @@ export default function StudentsPage() {
                         <input
                             className="input"
                             style={{ flex: 1 }}
-                            placeholder="🔍 Search by student name or mobile no..."
+                            placeholder="🔍 Search by name, scholar no. or mobile no..."
                             value={search}
                             onChange={e => setSearch(e.target.value)}
                             onKeyDown={e => e.key === 'Enter' && fetchStudents()}
@@ -287,8 +390,15 @@ export default function StudentsPage() {
                                                         {s.fullName.charAt(0)}
                                                     </div>
                                                     <div>
-                                                        <div style={{ fontWeight: '600', fontSize: '14px' }}>{s.fullName}</div>
-                                                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.studentId}</div>
+                                                        <div style={{ fontWeight: '600', fontSize: '14px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                            {s.fullName}
+                                                            {s.hasSiblings && (
+                                                                <span title="Has siblings" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '18px', height: '18px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', fontSize: '11px', fontWeight: '800', cursor: 'default' }}>+</span>
+                                                            )}
+                                                        </div>
+                                                        <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                                                            {s.scholarNo ? `#${s.scholarNo}` : s.studentId}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </td>
@@ -331,7 +441,7 @@ export default function StudentsPage() {
                                                     <button onClick={() => setSelectedStudent(s)} className="btn btn-secondary btn-sm" title="View">👁️</button>
                                                     {canEditOrDelete && (
                                                         <>
-                                                            <button onClick={() => { setSelectedStudent(s); setEditForm(s); setIsEditing(true); }} className="btn btn-secondary btn-sm" title="Edit">✏️</button>
+                                                            <button onClick={() => { setSelectedStudent(s); setEditForm(s); setIsEditing(true); fetchSiblingsForStudent(s.id); }} className="btn btn-secondary btn-sm" title="Edit">✏️</button>
                                                             <button onClick={() => toggleBlock(s)} className={`btn btn-sm ${s.status === 'ACTIVE' ? 'btn-secondary' : 'btn-success'}`} title={s.status === 'ACTIVE' ? 'Block' : 'Unblock'}>
                                                                 {s.status === 'ACTIVE' ? '🚫' : '✅'}
                                                             </button>
@@ -352,22 +462,28 @@ export default function StudentsPage() {
 
             {/* Student Detail / Edit Modal */}
             {selectedStudent && (
-                <div className="modal-overlay" onClick={() => { setSelectedStudent(null); setIsEditing(false); }}>
-                    <div className="modal" style={{ maxWidth: isEditing ? '600px' : '750px' }} onClick={e => e.stopPropagation()}>
+                <div className="modal-overlay" onClick={() => { setSelectedStudent(null); setIsEditing(false); setShowSiblingModal(false); }}>
+                    <div className="modal" style={{ maxWidth: isEditing ? '700px' : '750px' }} onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                                 <div className="avatar" style={{ width: '48px', height: '48px', fontSize: '20px' }}>{selectedStudent.fullName.charAt(0)}</div>
                                 <div>
                                     <h3 style={{ fontWeight: '700', fontSize: '18px' }}>{isEditing ? 'Edit Student' : selectedStudent.fullName}</h3>
-                                    <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>{selectedStudent.studentId}</p>
+                                    <p style={{ color: 'var(--text-muted)', fontSize: '13px' }}>
+                                        {selectedStudent.scholarNo ? `Scholar #${selectedStudent.scholarNo}` : selectedStudent.studentId}
+                                    </p>
                                 </div>
                             </div>
-                            <button onClick={() => { setSelectedStudent(null); setIsEditing(false); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+                            <button onClick={() => { setSelectedStudent(null); setIsEditing(false); setShowSiblingModal(false); }} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}>✕</button>
                         </div>
                         <div className="modal-body" style={{ maxHeight: '75vh', overflowY: 'auto' }}>
                             {isEditing ? (
                                 <form onSubmit={handleUpdate} className="grid-cols-2" style={{ gap: '16px' }}>
-                                    <div><label className="label">Scholar No.</label><input className="input" value={editForm.scholarNo || ''} onChange={e => setEditForm({...editForm, scholarNo: e.target.value})} /></div>
+                                    {/* Scholar No (editable) */}
+                                    <div style={{ gridColumn: '1 / -1', padding: '12px', background: 'rgba(99,102,241,0.08)', borderRadius: '10px', border: '1px dashed rgba(99,102,241,0.4)', marginBottom: '4px' }}>
+                                        <label className="label" style={{ color: 'var(--primary)', fontWeight: '700' }}>🪪 Scholar No. (Editable)</label>
+                                        <input className="input" value={editForm.scholarNo || ''} onChange={e => setEditForm({...editForm, scholarNo: e.target.value})} placeholder="Enter scholar number" />
+                                    </div>
                                     <div><label className="label">Full Name</label><input className="input" value={editForm.fullName || ''} onChange={e => setEditForm({...editForm, fullName: e.target.value})} /></div>
                                     <div><label className="label">Phone</label><input className="input" value={editForm.phone || ''} onChange={e => setEditForm({...editForm, phone: e.target.value})} /></div>
                                     <div><label className="label">Parent Phone</label><input className="input" value={editForm.parentPhone || ''} onChange={e => setEditForm({...editForm, parentPhone: e.target.value})} /></div>
@@ -423,10 +539,61 @@ export default function StudentsPage() {
                                         </button>
                                         <button type="button" onClick={() => setIsEditing(false)} className="btn btn-secondary">Cancel</button>
                                     </div>
+
+                                    {/* ── Add Sibling Section ── */}
+                                    {canEditOrDelete && (
+                                        <div className="col-span-2" style={{ marginTop: '8px', paddingTop: '16px', borderTop: '1px solid var(--border)' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                                                <div>
+                                                    <div style={{ fontWeight: '700', fontSize: '14px', color: 'var(--text-primary)' }}>👫 Sibling Links</div>
+                                                    <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Max 3 siblings per student</div>
+                                                </div>
+                                                {currentSiblings.length < 3 && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setShowSiblingModal(true)}
+                                                        className="btn btn-primary btn-sm"
+                                                        style={{ background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', fontSize: '12px', padding: '6px 14px' }}
+                                                    >
+                                                        ➕ Add Sibling
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {siblingsLoading ? (
+                                                <div style={{ textAlign: 'center', padding: '16px' }}><div className="spinner" style={{ margin: '0 auto', width: '24px', height: '24px' }} /></div>
+                                            ) : currentSiblings.length === 0 ? (
+                                                <div style={{ padding: '16px', textAlign: 'center', background: 'var(--surface-2)', borderRadius: '10px', fontSize: '13px', color: 'var(--text-muted)' }}>
+                                                    No siblings added yet. Click "Add Sibling" to link siblings.
+                                                </div>
+                                            ) : (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                    {currentSiblings.map(sib => (
+                                                        <div key={sib.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', background: 'var(--surface-2)', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                                                            <div>
+                                                                <div style={{ fontWeight: '600', fontSize: '13px' }}>{sib.fullName}</div>
+                                                                <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>
+                                                                    {sib.scholarNo ? `#${sib.scholarNo}` : ''} • {sib.courseName} - {sib.batchName}
+                                                                </div>
+                                                            </div>
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => handleRemoveSibling(sib.siblingLinkId)}
+                                                                style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.3)', borderRadius: '6px', color: '#ef4444', padding: '4px 10px', fontSize: '11px', cursor: 'pointer' }}
+                                                            >
+                                                                ✕ Remove
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                 </form>
                             ) : (
                                 <div className="grid-cols-2">
                                     {[
+                                        ['🪪 Scholar No.', selectedStudent.scholarNo || 'N/A'],
                                         ['📱 Phone', selectedStudent.phone],
                                         ['👨 Father', selectedStudent.fatherName || 'N/A'],
                                         ['📧 Email', selectedStudent.email || 'N/A'],
@@ -543,13 +710,71 @@ export default function StudentsPage() {
                         {!isEditing && (
                             <div className="modal-footer">
                                 {canEditOrDelete && (
-                                    <button onClick={() => { setEditForm(selectedStudent); setIsEditing(true); }} className="btn btn-secondary">✏️ Edit Details</button>
+                                    <button onClick={() => { setEditForm(selectedStudent); setIsEditing(true); fetchSiblingsForStudent(selectedStudent.id); }} className="btn btn-secondary">✏️ Edit Details</button>
                                 )}
                                 <button onClick={() => downloadPDF('admission-form-content', `${selectedStudent.fullName}_Admission_Form`)} className="btn btn-primary">📄 Admission Form</button>
                                 <a href={`https://wa.me/${(selectedStudent.parentPhone || selectedStudent.phone)?.replace(/\D/g, '')}?text=Dear Parent, This is regarding ${selectedStudent.fullName} from our school.`} target="_blank" className="btn btn-success">💬 WhatsApp Parent</a>
                                 <button onClick={() => setSelectedStudent(null)} className="btn btn-secondary">Close</button>
                             </div>
                         )}
+                    </div>
+                </div>
+            )}
+
+            {/* Add Sibling Search Modal */}
+            {showSiblingModal && selectedStudent && (
+                <div className="modal-overlay" style={{ zIndex: 1100 }} onClick={() => setShowSiblingModal(false)}>
+                    <div className="modal" style={{ maxWidth: '500px' }} onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <div>
+                                <h3 style={{ fontWeight: '700', fontSize: '18px' }}>👫 Search & Add Sibling</h3>
+                                <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>for {selectedStudent.fullName} ({3 - currentSiblings.length} slot{3 - currentSiblings.length !== 1 ? 's' : ''} remaining)</p>
+                            </div>
+                            <button onClick={() => setShowSiblingModal(false)} style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '20px', cursor: 'pointer' }}>✕</button>
+                        </div>
+                        <div className="modal-body">
+                            <div style={{ display: 'flex', gap: '8px', marginBottom: '16px' }}>
+                                <input
+                                    className="input"
+                                    style={{ flex: 1 }}
+                                    placeholder="Search by name or scholar no..."
+                                    value={siblingSearch}
+                                    onChange={e => setSiblingSearch(e.target.value)}
+                                    onKeyDown={e => e.key === 'Enter' && searchSiblings()}
+                                    autoFocus
+                                />
+                                <button className="btn btn-primary" onClick={searchSiblings} disabled={siblingSearchLoading}>
+                                    {siblingSearchLoading ? '...' : '🔍'}
+                                </button>
+                            </div>
+
+                            {siblingSearchResults.length === 0 && siblingSearch && !siblingSearchLoading && (
+                                <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '13px' }}>
+                                    No matching students found (already-linked siblings are excluded).
+                                </div>
+                            )}
+
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                {siblingSearchResults.map(s => (
+                                    <div key={s.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'var(--surface-2)', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                                        <div>
+                                            <div style={{ fontWeight: '600', fontSize: '14px' }}>{s.fullName}</div>
+                                            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
+                                                {s.scholarNo ? `#${s.scholarNo} • ` : ''}{s.courseName} - {s.batchName}
+                                            </div>
+                                        </div>
+                                        <button
+                                            className="btn btn-primary btn-sm"
+                                            disabled={addingSibling}
+                                            onClick={() => handleAddSibling(s.id)}
+                                            style={{ fontSize: '12px', padding: '6px 14px' }}
+                                        >
+                                            {addingSibling ? '...' : '➕ Add'}
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 </div>
             )}

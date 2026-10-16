@@ -371,10 +371,30 @@ model Student {
   parentLinks          ParentProfile[]       @relation("ParentChildren")
   examResults          ExamResult[]
   transferCertificates TransferCertificate[]
+  siblingsAsA          Sibling[]             @relation("SiblingA")
+  siblingsAsB          Sibling[]             @relation("SiblingB")
 
   @@index([tenantId])
   @@index([tenantId, fullName])
   @@index([tenantId, phone])
+  @@index([tenantId, scholarNo])
+}
+
+// Sibling relationship between two students (bidirectional, max 3 siblings)
+model Sibling {
+  id         String   @id @default(cuid())
+  tenantId   String
+  studentAId String
+  studentBId String
+  createdAt  DateTime @default(now())
+
+  studentA Student @relation("SiblingA", fields: [studentAId], references: [id], onDelete: Cascade)
+  studentB Student @relation("SiblingB", fields: [studentBId], references: [id], onDelete: Cascade)
+
+  @@unique([studentAId, studentBId])
+  @@index([tenantId])
+  @@index([studentAId])
+  @@index([studentBId])
 }
 
 enum Gender {
