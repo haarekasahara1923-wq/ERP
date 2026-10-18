@@ -9,7 +9,7 @@ export const viewport = {
   userScalable: false,
   themeColor: [
     { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
-    { media: "(prefers-color-scheme: light)", color: "#6366f1" },
+    { media: "(prefers-color-scheme: light)", color: "#f97316" },
   ],
 };
 
