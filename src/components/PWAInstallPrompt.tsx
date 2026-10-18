@@ -22,6 +22,7 @@ export default function PWAInstallPrompt() {
         .then((reg) => {
           console.log('[PWA] Service Worker registered:', reg.scope)
           setSwRegistration(reg)
+          reg.update().catch(() => {})
 
           // Check for SW updates
           reg.addEventListener('updatefound', () => {
@@ -109,14 +110,14 @@ export default function PWAInstallPrompt() {
           left: 0,
           right: 0,
           zIndex: 99999,
-          background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+          background: 'linear-gradient(135deg, #0f172a 0%, #ea580c 100%)',
           color: '#fff',
           padding: '12px 20px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           gap: '12px',
-          boxShadow: '0 2px 20px rgba(99,102,241,0.4)',
+          boxShadow: '0 2px 20px rgba(234,88,12,0.4)',
           fontFamily: 'Inter, sans-serif',
           fontSize: '14px',
         }}>
@@ -129,7 +130,7 @@ export default function PWAInstallPrompt() {
               onClick={handleUpdate}
               style={{
                 background: '#fff',
-                color: '#6366f1',
+                color: '#ea580c',
                 border: 'none',
                 borderRadius: '8px',
                 padding: '6px 16px',
@@ -165,13 +166,13 @@ export default function PWAInstallPrompt() {
           bottom: '24px',
           right: '24px',
           zIndex: 99998,
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 100%)',
-          border: '1px solid rgba(99,102,241,0.4)',
+          background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)',
+          border: '1px solid rgba(249,115,22,0.4)',
           borderRadius: '20px',
           padding: '24px',
           maxWidth: '360px',
           width: 'calc(100vw - 48px)',
-          boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(99,102,241,0.2)',
+          boxShadow: '0 20px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(249,115,22,0.2)',
           fontFamily: 'Inter, sans-serif',
           animation: 'slideInUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
         }}>
@@ -205,15 +206,16 @@ export default function PWAInstallPrompt() {
               width: '52px',
               height: '52px',
               borderRadius: '14px',
-              background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+              background: '#0f172a',
+              overflow: 'hidden',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '26px',
               flexShrink: 0,
-              boxShadow: '0 8px 24px rgba(99,102,241,0.4)',
+              boxShadow: '0 8px 24px rgba(249,115,22,0.3)',
+              border: '1px solid rgba(249,115,22,0.4)',
             }}>
-              🏫
+              <img src="/icons/icon-96x96.png?v=3" alt="Scalevo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <div>
               <div style={{ color: '#fff', fontWeight: 700, fontSize: '16px', lineHeight: 1.2 }}>
@@ -256,7 +258,7 @@ export default function PWAInstallPrompt() {
               onClick={handleInstall}
               style={{
                 flex: 1,
-                background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
                 color: '#fff',
                 border: 'none',
                 borderRadius: '12px',
@@ -264,16 +266,16 @@ export default function PWAInstallPrompt() {
                 fontWeight: 700,
                 fontSize: '14px',
                 cursor: 'pointer',
-                boxShadow: '0 4px 20px rgba(99,102,241,0.4)',
+                boxShadow: '0 4px 20px rgba(249,115,22,0.4)',
                 transition: 'transform 0.2s, box-shadow 0.2s',
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-1px)'
-                e.currentTarget.style.boxShadow = '0 8px 30px rgba(99,102,241,0.6)'
+                e.currentTarget.style.boxShadow = '0 8px 30px rgba(249,115,22,0.6)'
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'translateY(0)'
-                e.currentTarget.style.boxShadow = '0 4px 20px rgba(99,102,241,0.4)'
+                e.currentTarget.style.boxShadow = '0 4px 20px rgba(249,115,22,0.4)'
               }}
             >
               📲 Install App

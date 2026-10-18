@@ -172,7 +172,7 @@ function DashboardSidebar({ open, onClose }: { open: boolean; onClose: () => voi
                         {tenant?.logo ? (
                             <img src={tenant.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         ) : isSuperAdmin ? '👑' : (
-                            <img src="/logo.png" alt="UDBA Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                            <img src="/logo.png" alt="Scalevo Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
                         )}
                     </div>
                     <div>
@@ -226,7 +226,7 @@ function DashboardSidebar({ open, onClose }: { open: boolean; onClose: () => voi
                                     width: '100%',
                                     marginBottom: '8px',
                                     padding: '9px 12px',
-                                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                                    background: 'linear-gradient(135deg, #ea580c 0%, #f97316 100%)',
                                     color: '#fff',
                                     border: 'none',
                                     borderRadius: '10px',
@@ -237,7 +237,7 @@ function DashboardSidebar({ open, onClose }: { open: boolean; onClose: () => voi
                                     alignItems: 'center',
                                     justifyContent: 'center',
                                     gap: '6px',
-                                    boxShadow: '0 4px 16px rgba(99,102,241,0.35)',
+                                    boxShadow: '0 4px 16px rgba(249,115,22,0.35)',
                                 }}
                             >
                                 📲 Install App

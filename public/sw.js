@@ -1,16 +1,19 @@
 // Scalevo ERP - Service Worker
 // Handles: caching, offline support, push notifications, background sync
 
-const CACHE_NAME = 'scalevo-v3';
-const STATIC_CACHE = 'scalevo-static-v3';
-const API_CACHE = 'scalevo-api-v3';
+const CACHE_NAME = 'scalevo-v4';
+const STATIC_CACHE = 'scalevo-static-v4';
+const API_CACHE = 'scalevo-api-v4';
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = [
   '/',
   '/login',
   '/dashboard',
-  '/manifest.json',
+  '/manifest.json?v=3',
+  '/favicon.ico?v=3',
+  '/icons/icon-192x192.png?v=3',
+  '/icons/icon-512x512.png?v=3',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
 ];
@@ -25,7 +28,7 @@ const API_ROUTES = [
 
 // ─── Install ───────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Scalevo Service Worker...');
+  console.log('[SW] Installing Scalevo Service Worker v4...');
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       console.log('[SW] Pre-caching static assets');
@@ -38,7 +41,7 @@ self.addEventListener('install', (event) => {
 
 // ─── Activate ──────────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Scalevo Service Worker...');
+  console.log('[SW] Activating Scalevo Service Worker v4...');
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
@@ -62,6 +65,14 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return;
   if (url.protocol === 'chrome-extension:') return;
   if (url.origin !== self.location.origin) return;
+
+  // Manifest, browserconfig, and sw.js should ALWAYS be network-first to avoid stale icons
+  if (url.pathname.includes('manifest.json') || url.pathname.includes('browserconfig.xml')) {
+    event.respondWith(
+      fetch(request).catch(() => caches.match(request))
+    );
+    return;
+  }
 
   // API routes: Network-first, fallback to cache
   if (url.pathname.startsWith('/api/')) {

@@ -17,13 +17,13 @@ export const metadata: Metadata = {
   title: "Scalevo — Multitenant School ERP Platform",
   description: "Scalevo is a complete multitenant School ERP platform — manage students, fees, attendance, exams, transport and parent communication. Register your school for free.",
   keywords: "Scalevo, School ERP, School Management System, student portal, fee management, multitenant school software",
-  manifest: "/manifest.json",
+  manifest: "/manifest.json?v=3",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
     title: "Scalevo",
     startupImage: [
-      { url: "/icons/icon-512x512.png" },
+      { url: "/icons/icon-512x512.png?v=3" },
     ],
   },
   openGraph: {
@@ -33,14 +33,16 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
-      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+      { url: "/favicon.ico?v=3", sizes: "any" },
+      { url: "/icons/icon-96x96.png?v=3", sizes: "96x96", type: "image/png" },
+      { url: "/icons/icon-192x192.png?v=3", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png?v=3", sizes: "512x512", type: "image/png" },
     ],
     apple: [
-      { url: "/icons/icon-152x152.png", sizes: "152x152", type: "image/png" },
-      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-152x152.png?v=3", sizes: "152x152", type: "image/png" },
+      { url: "/icons/icon-192x192.png?v=3", sizes: "192x192", type: "image/png" },
     ],
-    shortcut: "/icons/icon-192x192.png",
+    shortcut: "/icons/icon-192x192.png?v=3",
   },
 };
 
@@ -58,23 +60,25 @@ export default function RootLayout({
         <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
 
         {/* PWA Meta Tags */}
+        <link rel="manifest" href="/manifest.json?v=3" />
         <meta name="application-name" content="Scalevo" />
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Scalevo" />
-        <meta name="msapplication-TileColor" content="#6366f1" />
-        <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
-        <meta name="msapplication-config" content="/browserconfig.xml" />
+        <meta name="msapplication-TileColor" content="#0f172a" />
+        <meta name="msapplication-TileImage" content="/icons/icon-144x144.png?v=3" />
+        <meta name="msapplication-config" content="/browserconfig.xml?v=3" />
 
         {/* Apple Touch Icons */}
-        <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
+        <link rel="apple-touch-icon" href="/icons/icon-152x152.png?v=3" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png?v=3" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png?v=3" />
 
         {/* Favicons */}
-        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
+        <link rel="icon" href="/favicon.ico?v=3" sizes="any" />
+        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png?v=3" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png?v=3" />
       </head>
       <body suppressHydrationWarning>
         {/* Screenshot / Screen-capture shield overlay */}
