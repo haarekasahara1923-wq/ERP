@@ -79,6 +79,9 @@ export interface ReportPDFOptions {
     subtitle?: string
     schoolName?: string
     schoolAddress?: string
+    schoolLogo?: string
+    schoolCode?: string
+    diseCode?: string
     stats?: ReportPDFStat[]
     tables: ReportPDFTable[]
     notes?: string
@@ -90,6 +93,9 @@ export function generateAndPrintPDF(options: ReportPDFOptions) {
         subtitle = 'Confidential Management Report',
         schoolName = 'Universal Day Boarding Academy',
         schoolAddress = '📍 Pinto Park, Gwalior (MP) • Ph: +91 7879337770',
+        schoolLogo = '',
+        schoolCode = '',
+        diseCode = '',
         stats = [],
         tables = [],
         notes = '',
@@ -323,16 +329,25 @@ export function generateAndPrintPDF(options: ReportPDFOptions) {
 
     <!-- Printable Report Content -->
     <div class="report-header">
-        <div>
-            <div class="school-title">🏫 ${schoolName}</div>
-            <div class="school-subtitle">${schoolAddress}</div>
-            <div class="report-main-title">${title}</div>
-            <div style="font-size: 12px; color: #64748b; margin-top: 2px;">${subtitle}</div>
+        <div style="display: flex; gap: 14px; align-items: center;">
+            ${schoolLogo ? `<img src="${schoolLogo}" alt="Logo" style="height: 52px; max-width: 90px; object-fit: contain; border-radius: 4px;" />` : ''}
+            <div>
+                <div class="school-title">🏫 ${schoolName}</div>
+                <div class="school-subtitle">${schoolAddress}</div>
+                ${(schoolCode || diseCode) ? `
+                <div style="font-size: 11px; font-weight: 700; color: #1a5c38; margin-top: 3px;">
+                    ${schoolCode ? `School ID: ${schoolCode}` : ''}
+                    ${schoolCode && diseCode ? ' &nbsp;|&nbsp; ' : ''}
+                    ${diseCode ? `DISE Code: ${diseCode}` : ''}
+                </div>` : ''}
+                <div class="report-main-title">${title}</div>
+                <div style="font-size: 12px; color: #64748b; margin-top: 2px;">${subtitle}</div>
+            </div>
         </div>
         <div class="header-meta">
             <div class="badge">Official Report</div>
             <div><strong>Generated:</strong> ${generatedDate}</div>
-            <div><strong>System:</strong> UDBA ERP Portal</div>
+            <div><strong>System:</strong> School ERP Portal</div>
         </div>
     </div>
 

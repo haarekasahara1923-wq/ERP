@@ -110,27 +110,63 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Required fields missing' }, { status: 400 })
         }
 
-        // ── Duplicate check: Scholar No + Full Name + Father Name (case-insensitive) ──
-        if (scholarNo && fullName && fatherName) {
-            const duplicate = await prisma.student.findFirst({
+        // ── STRICT SCHOLAR NO DUPLICATE CHECK (First and foremost) ──
+        if (scholarNo && scholarNo.trim()) {
+            const cleanScholarNo = scholarNo.trim()
+            const duplicateByScholar = await prisma.student.findFirst({
                 where: {
                     tenantId: user!.tenantId,
-                    scholarNo: { equals: scholarNo.trim(), mode: 'insensitive' },
-                    fullName: { equals: fullName.trim(), mode: 'insensitive' },
-                    fatherName: { equals: fatherName.trim(), mode: 'insensitive' },
+                    scholarNo: { equals: cleanScholarNo, mode: 'insensitive' }
+                },
+                include: {
+                    course: { select: { name: true } },
+                    batch: { select: { name: true } }
                 }
             })
-            if (duplicate) {
+            if (duplicateByScholar) {
                 return NextResponse.json({
-                    error: `Student already exists! A student named "${duplicate.fullName}" with Scholar No. "${duplicate.scholarNo}" and Father's Name "${duplicate.fatherName}" was previously added on ${new Date(duplicate.createdAt).toLocaleDateString('en-IN')}.`,
+                    error: `Duplicate Entry Detected! Scholar No. "${cleanScholarNo}" is already assigned to student "${duplicateByScholar.fullName}" (Class: ${duplicateByScholar.course?.name || 'N/A'}, Father: ${duplicateByScholar.fatherName || 'N/A'}). Duplicate scholar number cannot be saved.`,
                     code: 'DUPLICATE_STUDENT',
                     existingStudent: {
-                        id: duplicate.id,
-                        fullName: duplicate.fullName,
-                        scholarNo: duplicate.scholarNo,
-                        fatherName: duplicate.fatherName,
-                        studentId: duplicate.studentId,
-                        createdAt: duplicate.createdAt,
+                        id: duplicateByScholar.id,
+                        fullName: duplicateByScholar.fullName,
+                        scholarNo: duplicateByScholar.scholarNo,
+                        fatherName: duplicateByScholar.fatherName || 'N/A',
+                        studentId: duplicateByScholar.studentId || 'N/A',
+                        className: duplicateByScholar.course?.name || 'N/A',
+                        batchName: duplicateByScholar.batch?.name || 'N/A',
+                        createdAt: duplicateByScholar.createdAt,
+                    }
+                }, { status: 409 })
+            }
+        }
+
+        // Secondary check by Full Name + Father Name
+        if (fullName && fatherName && fullName.trim() && fatherName.trim()) {
+            const duplicateByNameFather = await prisma.student.findFirst({
+                where: {
+                    tenantId: user!.tenantId,
+                    fullName: { equals: fullName.trim(), mode: 'insensitive' },
+                    fatherName: { equals: fatherName.trim(), mode: 'insensitive' },
+                },
+                include: {
+                    course: { select: { name: true } },
+                    batch: { select: { name: true } }
+                }
+            })
+            if (duplicateByNameFather) {
+                return NextResponse.json({
+                    error: `Student already exists! A student named "${duplicateByNameFather.fullName}" with Father's Name "${duplicateByNameFather.fatherName}" already exists with Scholar No. "${duplicateByNameFather.scholarNo || 'N/A'}".`,
+                    code: 'DUPLICATE_STUDENT',
+                    existingStudent: {
+                        id: duplicateByNameFather.id,
+                        fullName: duplicateByNameFather.fullName,
+                        scholarNo: duplicateByNameFather.scholarNo,
+                        fatherName: duplicateByNameFather.fatherName || 'N/A',
+                        studentId: duplicateByNameFather.studentId || 'N/A',
+                        className: duplicateByNameFather.course?.name || 'N/A',
+                        batchName: duplicateByNameFather.batch?.name || 'N/A',
+                        createdAt: duplicateByNameFather.createdAt,
                     }
                 }, { status: 409 })
             }
@@ -223,6 +259,38 @@ export async function PATCH(req: NextRequest) {
         } = body
 
         if (!id) return NextResponse.json({ error: 'Student ID is required' }, { status: 400 })
+
+        // Check scholarNo duplicate collision if scholarNo is provided
+        if (scholarNo && scholarNo.trim()) {
+            const cleanScholarNo = scholarNo.trim()
+            const duplicate = await prisma.student.findFirst({
+                where: {
+                    tenantId: user!.tenantId,
+                    id: { not: id },
+                    scholarNo: { equals: cleanScholarNo, mode: 'insensitive' }
+                },
+                include: {
+                    course: { select: { name: true } },
+                    batch: { select: { name: true } }
+                }
+            })
+            if (duplicate) {
+                return NextResponse.json({
+                    error: `Duplicate Scholar No.! Scholar No. "${cleanScholarNo}" is already in use by student "${duplicate.fullName}" (Class: ${duplicate.course?.name || 'N/A'}). Duplicate entries are not allowed.`,
+                    code: 'DUPLICATE_STUDENT',
+                    existingStudent: {
+                        id: duplicate.id,
+                        fullName: duplicate.fullName,
+                        scholarNo: duplicate.scholarNo,
+                        fatherName: duplicate.fatherName || 'N/A',
+                        studentId: duplicate.studentId || 'N/A',
+                        className: duplicate.course?.name || 'N/A',
+                        batchName: duplicate.batch?.name || 'N/A',
+                        createdAt: duplicate.createdAt,
+                    }
+                }, { status: 409 })
+            }
+        }
 
         const student = await prisma.student.update({
             where: { id, tenantId: user!.tenantId },

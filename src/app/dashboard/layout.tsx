@@ -148,12 +148,19 @@ function DashboardSidebar({ open, onClose }: { open: boolean; onClose: () => voi
                 {/* Logo */}
                 <div className="sidebar-logo">
                     <div className="sidebar-logo-icon" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
-                        {isSuperAdmin ? '👑' : <img src="/logo.png" alt="UDBA Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />}
+                        {tenant?.logo ? (
+                            <img src={tenant.logo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        ) : isSuperAdmin ? '👑' : (
+                            <img src="/logo.png" alt="UDBA Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                        )}
                     </div>
                     <div>
-                        <div style={{ fontSize: '13px', fontWeight: '800', color: 'white' }}>Scalevo</div>
-                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {isSuperAdmin ? 'Super Admin' : (tenant?.name || 'School ERP')}
+                        <div style={{ fontSize: '13px', fontWeight: '800', color: 'white', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                            {isSuperAdmin ? 'Super Admin' : (tenant?.name || 'Scalevo ERP')}
+                        </div>
+                        <div style={{ fontSize: '9.5px', color: 'var(--text-muted)', display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '2px' }}>
+                            {(tenant?.registrationCode || tenant?.schoolCode) && <span>ID: {tenant.registrationCode || tenant.schoolCode}</span>}
+                            {tenant?.diseCode && <span>• DISE: {tenant.diseCode}</span>}
                         </div>
                     </div>
                 </div>
@@ -237,6 +244,13 @@ function DashboardHeader({ onMenuClick, onAiOpen }: { onMenuClick: () => void; o
                 </button>
                 <div className="header-title-container">
                     <h2 style={{ fontSize: '18px', fontWeight: '700', color: 'var(--text-primary)' }}>{getPageTitle()}</h2>
+                    {((tenant?.registrationCode || tenant?.schoolCode) || tenant?.diseCode) && (
+                        <div className="hide-mobile" style={{ fontSize: '11px', color: 'var(--text-muted)', display: 'flex', gap: '8px', marginTop: '1px' }}>
+                            {(tenant?.registrationCode || tenant?.schoolCode) && <span>School ID: <strong style={{ color: 'var(--text-secondary)' }}>{tenant.registrationCode || tenant.schoolCode}</strong></span>}
+                            {(tenant?.registrationCode || tenant?.schoolCode) && tenant?.diseCode && <span>•</span>}
+                            {tenant?.diseCode && <span>DISE Code: <strong style={{ color: 'var(--text-secondary)' }}>{tenant.diseCode}</strong></span>}
+                        </div>
+                    )}
                 </div>
             </div>
 

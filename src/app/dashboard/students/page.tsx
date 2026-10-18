@@ -329,7 +329,10 @@ export default function StudentsPage() {
             title: `Student Roster • ${label}`,
             subtitle: `Official Enrollment & Class Directory (${students.length} Students)`,
             schoolName: tenant?.name || 'Universal Day Boarding Academy',
-            schoolAddress: '📍 Official Institution Student Registry',
+            schoolAddress: tenant?.address || '📍 Official Institution Student Registry',
+            schoolLogo: tenant?.logo || '',
+            schoolCode: tenant?.registrationCode || tenant?.schoolCode || '',
+            diseCode: tenant?.diseCode || '',
             stats: [
                 { label: 'Total Students', value: students.length, subtext: `${activeCount} Active`, color: '#6366f1' },
                 { label: 'Total Billed', value: `₹${totalFees.toLocaleString('en-IN')}`, subtext: 'Course Fees', color: '#10b981' },
@@ -1287,46 +1290,75 @@ export default function StudentsPage() {
 
                                         return (
                                             <div key={examTitle} style={{ background: '#1e293b', border: '1px solid #334155', borderRadius: '12px', overflow: 'hidden', marginBottom: '16px' }}>
-                                                <div id={reportCardId} style={{ padding: '24px', background: '#1e293b', color: 'white' }}>
-                                                    <div style={{ textAlign: 'center', marginBottom: '24px', borderBottom: '2px solid #334155', paddingBottom: '16px' }}>
-                                                        <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '800' }}>School Admin Report</h2>
-                                                        <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '600', color: '#10b981' }}>{examTitle}</h3>
+                                                <div id={reportCardId} style={{ padding: '24px', background: '#ffffff', color: '#0f172a', borderRadius: '10px' }}>
+                                                    <div style={{ textAlign: 'center', marginBottom: '20px', borderBottom: '2px solid #e2e8f0', paddingBottom: '16px' }}>
+                                                        {tenant?.logo && (
+                                                            <img src={tenant.logo} alt="Logo" style={{ height: '55px', maxWidth: '100px', objectFit: 'contain', margin: '0 auto 8px auto', display: 'block' }} crossOrigin="anonymous" />
+                                                        )}
+                                                        <h2 style={{ margin: '0 0 4px 0', fontSize: '22px', fontWeight: '800', color: tenant?.themeColor || '#1e293b', textTransform: 'uppercase' }}>{tenant?.name || 'School Name'}</h2>
+                                                        {tenant?.address && <p style={{ margin: '2px 0', fontSize: '11px', color: '#64748b' }}>{tenant.address}</p>}
+                                                        <p style={{ margin: '2px 0', fontSize: '11px', color: '#64748b' }}>{tenant?.phone ? `Ph: ${tenant.phone}` : ''}{tenant?.phone && tenant?.email ? ' | ' : ''}{tenant?.email ? tenant.email : ''}</p>
+                                                        {((tenant?.registrationCode || tenant?.schoolCode) || tenant?.diseCode) && (
+                                                            <div style={{ marginTop: '4px', fontSize: '11px', fontWeight: '700', color: '#4338ca' }}>
+                                                                {(tenant?.registrationCode || tenant?.schoolCode) && <span>School ID: {tenant.registrationCode || tenant.schoolCode}</span>}
+                                                                {(tenant?.registrationCode || tenant?.schoolCode) && tenant?.diseCode && <span> &nbsp;|&nbsp; </span>}
+                                                                {tenant?.diseCode && <span>DISE Code: {tenant.diseCode}</span>}
+                                                            </div>
+                                                        )}
+                                                        <h3 style={{ margin: '12px 0 0 0', fontSize: '16px', fontWeight: '700', color: '#059669', textTransform: 'uppercase', letterSpacing: '0.5px' }}>STUDENT REPORT CARD - {examTitle}</h3>
                                                     </div>
-                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '14px' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '16px', fontSize: '13px', background: '#f8fafc', padding: '10px 14px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
                                                         <div>
-                                                            <p style={{ margin: '4px 0' }}><strong>Student:</strong> {selectedStudent.fullName}</p>
-                                                            <p style={{ margin: '4px 0' }}><strong>Class:</strong> {selectedStudent.courseName}</p>
+                                                            <p style={{ margin: '3px 0' }}><strong>Student Name:</strong> {selectedStudent.fullName}</p>
+                                                            <p style={{ margin: '3px 0' }}><strong>Scholar No.:</strong> {selectedStudent.scholarNo || 'N/A'}</p>
+                                                            <p style={{ margin: '3px 0' }}><strong>Father&apos;s Name:</strong> {selectedStudent.fatherName || 'N/A'}</p>
                                                         </div>
                                                         <div style={{ textAlign: 'right' }}>
-                                                            <p style={{ margin: '4px 0' }}><strong>Section:</strong> {selectedStudent.batchName}</p>
-                                                            <p style={{ margin: '4px 0' }}><strong>ID:</strong> {selectedStudent.studentId || 'N/A'}</p>
+                                                            <p style={{ margin: '3px 0' }}><strong>Class:</strong> {selectedStudent.courseName || 'N/A'}</p>
+                                                            <p style={{ margin: '3px 0' }}><strong>Section:</strong> {selectedStudent.batchName || 'N/A'}</p>
+                                                            <p style={{ margin: '3px 0' }}><strong>Student ID:</strong> {selectedStudent.studentId || 'N/A'}</p>
                                                         </div>
                                                     </div>
-                                                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px', border: '1px solid #334155' }}>
+                                                    <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '24px', border: '1px solid #cbd5e1' }}>
                                                         <thead>
-                                                            <tr style={{ background: 'rgba(99,102,241,0.1)' }}>
-                                                                <th style={{ padding: '10px', border: '1px solid #334155', textAlign: 'left', color: '#cbd5e1', fontSize: '12px' }}>Subject</th>
-                                                                <th style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center', color: '#cbd5e1', fontSize: '12px' }}>Max</th>
-                                                                <th style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center', color: '#cbd5e1', fontSize: '12px' }}>Obtained</th>
+                                                            <tr style={{ background: '#f1f5f9' }}>
+                                                                <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'left', color: '#334155', fontSize: '12px' }}>Subject</th>
+                                                                <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'center', color: '#334155', fontSize: '12px' }}>Max</th>
+                                                                <th style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'center', color: '#334155', fontSize: '12px' }}>Obtained</th>
                                                             </tr>
                                                         </thead>
                                                         <tbody>
                                                             {subjectRows.map((row: any, i: number) => (
                                                                 <tr key={i}>
-                                                                    <td style={{ padding: '10px', border: '1px solid #334155', fontSize: '13px', fontWeight: '600' }}>{row.subject}</td>
-                                                                    <td style={{ padding: '10px', border: '1px solid #334155', fontSize: '13px', textAlign: 'center' }}>{row.max}</td>
-                                                                    <td style={{ padding: '10px', border: '1px solid #334155', fontSize: '13px', textAlign: 'center', fontWeight: '700', color: row.obtained !== '-' ? '#10b981' : 'inherit' }}>{row.obtained}</td>
+                                                                    <td style={{ padding: '10px', border: '1px solid #cbd5e1', fontSize: '13px', fontWeight: '600', color: '#0f172a' }}>{row.subject}</td>
+                                                                    <td style={{ padding: '10px', border: '1px solid #cbd5e1', fontSize: '13px', textAlign: 'center', color: '#0f172a' }}>{row.max}</td>
+                                                                    <td style={{ padding: '10px', border: '1px solid #cbd5e1', fontSize: '13px', textAlign: 'center', fontWeight: '700', color: row.obtained !== '-' ? '#059669' : '#0f172a' }}>{row.obtained}</td>
                                                                 </tr>
                                                             ))}
                                                         </tbody>
                                                         <tfoot>
-                                                            <tr style={{ background: 'rgba(16,185,129,0.1)' }}>
-                                                                <td style={{ padding: '10px', border: '1px solid #334155', fontWeight: '800', textAlign: 'right', fontSize: '13px' }}>TOTAL ({percentage}%)</td>
-                                                                <td style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center', fontWeight: '800', fontSize: '13px' }}>{grandTotalMax}</td>
-                                                                <td style={{ padding: '10px', border: '1px solid #334155', textAlign: 'center', fontWeight: '800', color: '#10b981', fontSize: '13px' }}>{grandTotalObtained}</td>
+                                                            <tr style={{ background: '#ecfdf5' }}>
+                                                                <td style={{ padding: '10px', border: '1px solid #cbd5e1', fontWeight: '800', textAlign: 'right', fontSize: '13px', color: '#0f172a' }}>TOTAL ({percentage}%)</td>
+                                                                <td style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: '800', fontSize: '13px', color: '#0f172a' }}>{grandTotalMax}</td>
+                                                                <td style={{ padding: '10px', border: '1px solid #cbd5e1', textAlign: 'center', fontWeight: '800', color: '#059669', fontSize: '13px' }}>{grandTotalObtained}</td>
                                                             </tr>
                                                         </tfoot>
                                                     </table>
+
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '30px', paddingTop: '16px', borderTop: '1px dashed #cbd5e1', fontSize: '13px', color: '#475569' }}>
+                                                        <div style={{ textAlign: 'center', width: '160px' }}>
+                                                            <div style={{ height: '36px' }}></div>
+                                                            <div style={{ borderTop: '1px solid #64748b', paddingTop: '4px', fontWeight: '600' }}>Class Teacher</div>
+                                                        </div>
+                                                        <div style={{ textAlign: 'center', width: '160px' }}>
+                                                            {tenant?.directorSign ? (
+                                                                <img src={tenant.directorSign} alt="Principal Signature" style={{ height: '36px', objectFit: 'contain', marginBottom: '2px', display: 'block', margin: '0 auto 2px auto' }} crossOrigin="anonymous" />
+                                                            ) : (
+                                                                <div style={{ height: '36px' }}></div>
+                                                            )}
+                                                            <div style={{ borderTop: '1px solid #64748b', paddingTop: '4px', fontWeight: '600' }}>Principal / Director</div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                                 <div style={{ padding: '12px', background: '#0f172a', borderTop: '1px solid #334155', display: 'flex', justifyContent: 'flex-end' }}>
                                                     <button onClick={() => downloadPDF(reportCardId, `${selectedStudent.fullName}_${examTitle}`)} className="btn btn-secondary btn-sm" style={{ background: '#ef4444', color: 'white', border: 'none' }}>

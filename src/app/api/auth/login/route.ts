@@ -98,6 +98,9 @@ export async function POST(req: NextRequest) {
                 address: tenant.address,
                 email: tenant.email,
                 schoolCode: tenant.schoolCode,
+                registrationCode: tenant.registrationCode || null,
+                diseCode: tenant.diseCode || null,
+                directorSign: tenant.directorSign || null,
             } : null,
             subscription: subscription || null,
         })

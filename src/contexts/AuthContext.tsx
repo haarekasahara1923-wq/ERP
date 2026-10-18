@@ -1,6 +1,6 @@
 'use client'
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 
 interface User {
     id: string
@@ -40,6 +40,7 @@ interface AuthContextType {
     token: string | null
     login: (email: string, password: string, role?: string, tenantId?: string) => Promise<{ success: boolean; error?: string }>
     logout: () => void
+    refreshTenant: () => Promise<void>
     handleUnauthorized: () => void
     isLoading: boolean
 }
@@ -53,6 +54,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [token, setToken] = useState<string | null>(null)
     const [isLoading, setIsLoading] = useState(true)
 
+    const refreshTenant = useCallback(async (activeToken?: string) => {
+        const t = activeToken || token || localStorage.getItem('scalevo_token') || localStorage.getItem('udba_token')
+        if (!t) return
+        try {
+            const res = await fetch('/api/dashboard/profile', {
+                headers: { Authorization: `Bearer ${t}` }
+            })
+            const data = await res.json()
+            if (data?.success && data?.tenant) {
+                setTenant(data.tenant)
+                const key = localStorage.getItem('scalevo_tenant') ? 'scalevo_tenant' : 'udba_tenant'
+                localStorage.setItem(key, JSON.stringify(data.tenant))
+            }
+        } catch (e) {
+            console.error('Error refreshing tenant profile', e)
+        }
+    }, [token])
+
     useEffect(() => {
         // Support both scalevo_ (new) and udba_ (legacy) keys for smooth migration
         const storedToken = localStorage.getItem('scalevo_token') || localStorage.getItem('udba_token')
@@ -65,9 +84,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(JSON.parse(storedUser))
             if (storedTenant) setTenant(JSON.parse(storedTenant))
             if (storedSub) setSubscription(JSON.parse(storedSub))
+
+            // Fetch latest updated tenant from DB
+            refreshTenant(storedToken)
         }
         setIsLoading(false)
-    }, [])
+    }, [refreshTenant])
 
     const login = async (email: string, password: string, role?: string, tenantId?: string) => {
         try {
@@ -138,7 +160,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     return (
-        <AuthContext.Provider value={{ user, tenant, subscription, token, login, logout, handleUnauthorized, isLoading }}>
+        <AuthContext.Provider value={{ user, tenant, subscription, token, login, logout, refreshTenant, handleUnauthorized, isLoading }}>
             {children}
         </AuthContext.Provider>
     )

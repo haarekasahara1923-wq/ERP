@@ -64,20 +64,33 @@ export default function AdminDashboard() {
           <div style={{ fontSize: '22px', fontWeight: '800', color: 'white' }}>{tenant?.name || 'School'} Dashboard 🏫</div>
           <div style={{ fontSize: '14px', color: 'rgba(255,255,255,0.8)', marginTop: '4px' }}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</div>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-          {user?.role === 'SUPER_ADMIN' && tenant?.schoolCode && (
-            <div style={{ background: 'rgba(0,0,0,0.2)', padding: '12px 16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.2)' }}>
-              <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: '700', marginBottom: '4px' }}>Unique School ID</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '20px', fontWeight: '900', color: '#fde047', fontFamily: 'monospace', letterSpacing: '2px' }}>{tenant.schoolCode}</span>
-                <button onClick={() => setShowBroadcastModal(true)}
-                  style={{ padding: '6px 12px', background: 'rgba(253,224,71,0.2)', border: '1px solid rgba(253,224,71,0.4)', borderRadius: '8px', color: '#fef08a', fontSize: '12px', fontWeight: '700', cursor: 'pointer' }}>
-                  📢 Broadcast
-                </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+          <div style={{ background: 'rgba(0,0,0,0.25)', padding: '12px 18px', borderRadius: '14px', border: '1px solid rgba(255,255,255,0.25)', display: 'flex', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
+            {tenant?.schoolCode && (
+              <div>
+                <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: '700', marginBottom: '2px' }}>App School ID</div>
+                <div style={{ fontSize: '16px', fontWeight: '900', color: '#fde047', fontFamily: 'monospace', letterSpacing: '1px' }}>{tenant.schoolCode}</div>
+              </div>
+            )}
+            <div>
+              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: '700', marginBottom: '2px' }}>School ID / Reg. No.</div>
+              <div style={{ fontSize: '16px', fontWeight: '800', color: '#ffffff', fontFamily: 'monospace' }}>
+                {tenant?.registrationCode || tenant?.schoolCode || 'Not Set'}
               </div>
             </div>
-          )}
-          <div style={{ fontSize: '48px', display: 'none' /* hidden for space if needed, or keep: display:'block' */ }}>🎓</div>
+            <div>
+              <div style={{ fontSize: '10px', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.8px', fontWeight: '700', marginBottom: '2px' }}>DISE Code</div>
+              <div style={{ fontSize: '16px', fontWeight: '800', color: '#a7f3d0', fontFamily: 'monospace' }}>
+                {tenant?.diseCode || 'Not Set'}
+              </div>
+            </div>
+            {(user?.role === 'SUPER_ADMIN' || user?.role === 'COACHING_ADMIN') && (
+              <button onClick={() => setShowBroadcastModal(true)}
+                style={{ padding: '8px 14px', background: 'rgba(253,224,71,0.2)', border: '1px solid rgba(253,224,71,0.4)', borderRadius: '8px', color: '#fef08a', fontSize: '12px', fontWeight: '700', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                📢 Broadcast
+              </button>
+            )}
+          </div>
         </div>
       </div>
 

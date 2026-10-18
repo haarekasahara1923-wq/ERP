@@ -96,40 +96,58 @@ export function BirthdayCertificateModal({ isOpen, onClose, student, school }: a
           <div style={{ position: 'absolute', bottom: '10px', right: '10px', fontSize: '60px', color: school.themeColor || '#6366f1', opacity: 0.2 }}>🎈</div>
 
           {/* School Branding */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginBottom: '40px' }}>
-            {school.logo && <img src={school.logo} alt="School Logo" style={{ height: '80px', objectFit: 'contain' }} crossOrigin="anonymous" />}
-            <h1 style={{ margin: 0, fontSize: '32px', fontWeight: '800', color: school.themeColor || '#6366f1', textTransform: 'uppercase' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', marginBottom: '24px' }}>
+            {school.logo && <img src={school.logo} alt="School Logo" style={{ height: '70px', maxHeight: '70px', objectFit: 'contain' }} crossOrigin="anonymous" />}
+            <h1 style={{ margin: 0, fontSize: '30px', fontWeight: '800', color: school.themeColor || '#6366f1', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
               {school.name}
             </h1>
+            {school.address && <div style={{ fontSize: '14px', color: '#4b5563', fontStyle: 'normal' }}>{school.address}</div>}
+            <div style={{ fontSize: '13px', color: '#6b7280', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'center' }}>
+              {school.phone && <span>Ph: {school.phone}</span>}
+              {school.phone && school.email && <span>•</span>}
+              {school.email && <span>Email: {school.email}</span>}
+            </div>
+            {((school.registrationCode || school.schoolCode) || school.diseCode) && (
+              <div style={{ fontSize: '13px', fontWeight: '700', color: school.themeColor || '#4338ca', display: 'flex', gap: '12px', marginTop: '2px' }}>
+                {(school.registrationCode || school.schoolCode) && <span>School ID: {school.registrationCode || school.schoolCode}</span>}
+                {(school.registrationCode || school.schoolCode) && school.diseCode && <span>|</span>}
+                {school.diseCode && <span>DISE Code: {school.diseCode}</span>}
+              </div>
+            )}
           </div>
 
-          <h2 style={{ fontSize: '48px', color: '#f59e0b', margin: '0 0 20px 0', fontWeight: 'bold', textShadow: '2px 2px 4px rgba(0,0,0,0.1)' }}>
+          <h2 style={{ fontSize: '42px', color: '#f59e0b', margin: '0 0 14px 0', fontWeight: 'bold', textShadow: '2px 2px 4px rgba(0,0,0,0.1)' }}>
             Happy Birthday!
           </h2>
 
-          <p style={{ fontSize: '24px', margin: '20px 0', fontStyle: 'italic', color: '#4b5563' }}>
+          <p style={{ fontSize: '22px', margin: '10px 0', fontStyle: 'italic', color: '#4b5563' }}>
             This special birthday wish is presented to
           </p>
 
-          <h3 style={{ fontSize: '42px', margin: '10px 0', color: '#111827', textDecoration: 'underline', textDecorationColor: school.themeColor || '#6366f1' }}>
+          <h3 style={{ fontSize: '38px', margin: '8px 0', color: '#111827', textDecoration: 'underline', textDecorationColor: school.themeColor || '#6366f1' }}>
             {student.fullName}
           </h3>
 
-          <div style={{ fontSize: '20px', margin: '30px 0', textAlign: 'center', color: '#374151', lineHeight: '1.5', maxWidth: '80%' }}>
-            <p style={{ margin: '5px 0' }}>Child of <strong>{student.fatherName || student.parentLinks?.[0]?.name || 'Parents'}</strong></p>
-            <p style={{ margin: '5px 0' }}>Born on <strong>{student.dob ? new Date(student.dob).toLocaleDateString('en-IN') : 'this day'}</strong></p>
+          <div style={{ fontSize: '18px', margin: '18px 0', textAlign: 'center', color: '#374151', lineHeight: '1.6', maxWidth: '85%' }}>
+            <p style={{ margin: '3px 0' }}>
+              {student.scholarNo && <span>Scholar No: <strong>{student.scholarNo}</strong> &nbsp;|&nbsp; </span>}
+              Class: <strong>{student.course?.name || student.courseName || 'N/A'}</strong> {student.batch?.name ? `(${student.batch.name})` : (student.batchName ? `(${student.batchName})` : '')}
+            </p>
+            <p style={{ margin: '3px 0' }}>Child of <strong>{student.fatherName || student.parentLinks?.[0]?.name || 'Parents'}</strong></p>
+            <p style={{ margin: '3px 0' }}>Born on <strong>{student.dob ? new Date(student.dob).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' }) : 'this special day'}</strong></p>
           </div>
 
-          <p style={{ fontSize: '22px', margin: '10px 0', color: '#4b5563', maxWidth: '600px', textAlign: 'center' }}>
+          <p style={{ fontSize: '20px', margin: '8px 0', color: '#4b5563', maxWidth: '650px', textAlign: 'center', fontStyle: 'italic' }}>
             Wishing you a fantastic day filled with joy, laughter, and a wonderful year ahead!
           </p>
 
-          <div style={{ marginTop: 'auto', display: 'flex', width: '100%', justifyContent: 'space-around', alignItems: 'flex-end' }}>
-             <div style={{ borderTop: '2px solid #9ca3af', width: '200px', textAlign: 'center', paddingTop: '10px', fontSize: '18px' }}>
+          <div style={{ marginTop: 'auto', display: 'flex', width: '100%', justifyContent: 'space-around', alignItems: 'flex-end', paddingTop: '10px' }}>
+             <div style={{ borderTop: '2px solid #9ca3af', width: '220px', textAlign: 'center', paddingTop: '8px', fontSize: '16px', fontWeight: '600' }}>
                 Class Teacher
              </div>
-             <div style={{ borderTop: '2px solid #9ca3af', width: '200px', textAlign: 'center', paddingTop: '10px', fontSize: '18px' }}>
-                Principal
+             <div style={{ borderTop: '2px solid #9ca3af', width: '220px', textAlign: 'center', paddingTop: '8px', fontSize: '16px', fontWeight: '600', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                {school.directorSign && <img src={school.directorSign} alt="Principal Signature" style={{ height: '36px', objectFit: 'contain', marginBottom: '4px' }} crossOrigin="anonymous" />}
+                Principal / Director
              </div>
           </div>
         </div>

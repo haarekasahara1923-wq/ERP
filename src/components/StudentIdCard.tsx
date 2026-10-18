@@ -43,27 +43,34 @@ export function StudentIdCard({ student, school }: any) {
         <div style={{ 
           background: school.themeColor || '#6366f1', 
           color: 'white', 
-          padding: '12px 8px', 
+          padding: '10px 8px 8px 8px', 
           textAlign: 'center',
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
-          gap: '4px'
+          gap: '3px'
         }}>
           {school.logo ? (
-            <img src={school.logo} alt="Logo" style={{ height: '30px', objectFit: 'contain' }} crossOrigin="anonymous" />
+            <img src={school.logo} alt="Logo" style={{ height: '28px', maxWidth: '80px', objectFit: 'contain' }} crossOrigin="anonymous" />
           ) : (
             <div style={{ fontSize: '18px' }}>🏫</div>
           )}
-          <div style={{ fontSize: '11px', fontWeight: '800', lineHeight: 1.1 }}>{school.name}</div>
+          <div style={{ fontSize: '11px', fontWeight: '800', lineHeight: 1.15 }}>{school.name}</div>
+          {((school.registrationCode || school.schoolCode) || school.diseCode) && (
+            <div style={{ fontSize: '7px', opacity: 0.95, fontWeight: '700', display: 'flex', gap: '5px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {(school.registrationCode || school.schoolCode) && <span>ID: {school.registrationCode || school.schoolCode}</span>}
+              {(school.registrationCode || school.schoolCode) && school.diseCode && <span>•</span>}
+              {school.diseCode && <span>DISE: {school.diseCode}</span>}
+            </div>
+          )}
         </div>
 
         {/* Student Info */}
-        <div style={{ flex: 1, padding: '12px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+        <div style={{ flex: 1, padding: '8px 10px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
           <div style={{ 
-            width: '70px', 
-            height: '70px', 
-            borderRadius: '8px', 
+            width: '64px', 
+            height: '64px', 
+            borderRadius: '6px', 
             background: '#e2e8f0', 
             overflow: 'hidden',
             border: `2px solid ${school.themeColor || '#6366f1'}`
@@ -71,33 +78,37 @@ export function StudentIdCard({ student, school }: any) {
             {student.photo ? (
               <img src={student.photo} alt="Student" style={{ width: '100%', height: '100%', objectFit: 'cover' }} crossOrigin="anonymous" />
             ) : (
-              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px' }}>🧑‍🎓</div>
+              <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>🧑‍🎓</div>
             )}
           </div>
           
           <div style={{ textAlign: 'center', width: '100%' }}>
-            <div style={{ fontSize: '14px', fontWeight: '800', textTransform: 'uppercase', color: school.themeColor || '#6366f1', marginBottom: '2px' }}>{student.fullName}</div>
-            <div style={{ fontSize: '10px', color: '#64748b', fontWeight: '600' }}>{student.course?.name} - {student.batch?.name}</div>
+            <div style={{ fontSize: '12px', fontWeight: '800', textTransform: 'uppercase', color: school.themeColor || '#6366f1', marginBottom: '1px' }}>{student.fullName}</div>
+            <div style={{ fontSize: '9.5px', color: '#64748b', fontWeight: '600' }}>{student.course?.name || student.courseName || 'Class'} {student.batch?.name ? `(${student.batch.name})` : (student.batchName ? `(${student.batchName})` : '')}</div>
           </div>
 
-          <div style={{ width: '100%', marginTop: 'auto', display: 'grid', gridTemplateColumns: '40px 1fr', gap: '4px', fontSize: '9px' }}>
+          <div style={{ width: '100%', marginTop: 'auto', display: 'grid', gridTemplateColumns: '46px 1fr', gap: '3px', fontSize: '8.5px' }}>
+            <div style={{ fontWeight: '700', color: '#64748b' }}>Scholar:</div>
+            <div style={{ fontWeight: '700', color: '#0f172a' }}>{student.scholarNo || 'N/A'}</div>
+
             <div style={{ fontWeight: '700', color: '#64748b' }}>F.Name:</div>
             <div style={{ fontWeight: '600', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{student.fatherName || 'N/A'}</div>
             
             <div style={{ fontWeight: '700', color: '#64748b' }}>DOB:</div>
             <div style={{ fontWeight: '600' }}>{student.dob ? new Date(student.dob).toLocaleDateString('en-IN') : 'N/A'}</div>
             
-            <div style={{ fontWeight: '700', color: '#64748b' }}>ID NO:</div>
-            <div style={{ fontWeight: '600' }}>{student.studentId || student.id.slice(0, 8).toUpperCase()}</div>
+            <div style={{ fontWeight: '700', color: '#64748b' }}>ID No:</div>
+            <div style={{ fontWeight: '600' }}>{student.studentId || (student.id ? student.id.slice(0, 8).toUpperCase() : 'N/A')}</div>
             
             <div style={{ fontWeight: '700', color: '#64748b' }}>Phone:</div>
-            <div style={{ fontWeight: '600' }}>{student.phone}</div>
+            <div style={{ fontWeight: '600' }}>{student.phone || student.parentPhone || 'N/A'}</div>
           </div>
         </div>
 
         {/* Footer */}
-        <div style={{ background: '#f8fafc', padding: '6px', textAlign: 'center', fontSize: '7px', color: '#94a3b8', borderTop: '1px solid #e2e8f0' }}>
-          {school.address || 'Valid for current academic year only.'}
+        <div style={{ background: '#f8fafc', padding: '5px 4px', textAlign: 'center', fontSize: '6.5px', color: '#64748b', borderTop: '1px solid #e2e8f0', lineHeight: 1.2 }}>
+          <div>{school.address || 'Valid for current academic year only.'}</div>
+          <div>{school.phone ? `Ph: ${school.phone}` : ''}{school.phone && school.email ? ' | ' : ''}{school.email ? school.email : ''}</div>
         </div>
       </div>
 

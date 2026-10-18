@@ -72,7 +72,9 @@ export default function AddStudentPage() {
     const [showGovtModal, setShowGovtModal] = useState(false)
     const [govtDocs, setGovtDocs] = useState<Record<string, {name:string;data:string;type:string}[]>>({})
     // Duplicate student popup state
-    const [duplicateInfo, setDuplicateInfo] = useState<null | { fullName: string; scholarNo: string; fatherName: string; studentId: string; createdAt: string }>(null)
+    const [duplicateInfo, setDuplicateInfo] = useState<null | { fullName: string; scholarNo: string; fatherName: string; studentId: string; className?: string; courseName?: string; batchName?: string; createdAt: string }>(null)
+    const [scholarChecking, setScholarChecking] = useState(false)
+    const [scholarError, setScholarError] = useState('')
 
     const [form, setForm] = useState({
         scholarNo: '', fullName: '', fatherName: '', motherName: '', phone: '', parentPhone: '',
@@ -101,12 +103,53 @@ export default function AddStudentPage() {
     const filteredBatches = batches.filter((b: any) => !form.courseId || b.courseId === form.courseId)
     const selectedCourse = courses.find((c: any) => c.id === form.courseId)
 
+    // Check duplicate scholar number live on blur
+    const checkScholarDuplicate = async () => {
+        const val = form.scholarNo.trim()
+        if (!val || !token) {
+            setScholarError('')
+            return
+        }
+        setScholarChecking(true)
+        try {
+            const res = await fetch(`/api/students?search=${encodeURIComponent(val)}&searchBy=scholarNo`, {
+                headers: { Authorization: `Bearer ${token}` }
+            })
+            const data = await res.json()
+            if (data.success && data.data) {
+                const match = data.data.find((s: any) => s.scholarNo && s.scholarNo.trim().toLowerCase() === val.toLowerCase())
+                if (match) {
+                    setScholarError(`⚠️ Scholar No. "${val}" is already taken by student "${match.fullName}" (Class: ${match.courseName || 'N/A'})!`)
+                    setDuplicateInfo({
+                        fullName: match.fullName,
+                        scholarNo: match.scholarNo,
+                        fatherName: match.fatherName || 'N/A',
+                        studentId: match.studentId || 'N/A',
+                        className: match.courseName || 'N/A',
+                        batchName: match.batchName || 'N/A',
+                        createdAt: match.createdAt || new Date().toISOString()
+                    })
+                } else {
+                    setScholarError('')
+                }
+            }
+        } catch (e) {
+            console.error('Error checking duplicate scholar number', e)
+        }
+        setScholarChecking(false)
+    }
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         // Validate mandatory combination
         if (!form.scholarNo.trim()) { setToast('Scholar No. is mandatory'); return }
         if (!form.fullName.trim()) { setToast('Student Name is mandatory'); return }
         if (!form.fatherName.trim()) { setToast("Father's Name is mandatory"); return }
+
+        if (scholarError && duplicateInfo) {
+            setToast('⚠️ Duplicate Scholar No.! Please change the Scholar No. before saving.')
+            return
+        }
 
         setLoading(true)
         const res = await fetch('/api/students', {
@@ -119,9 +162,16 @@ export default function AddStudentPage() {
         if (data.success) {
             setSuccess(true); setToast('Student added successfully!')
             setTimeout(() => router.push('/dashboard/students'), 1500)
-        } else if (data.code === 'DUPLICATE_STUDENT') {
+        } else if (res.status === 409 || data.code === 'DUPLICATE_STUDENT') {
             // Show duplicate popup
-            setDuplicateInfo(data.existingStudent)
+            setDuplicateInfo(data.existingStudent || {
+                fullName: 'Existing Student',
+                scholarNo: form.scholarNo,
+                fatherName: form.fatherName,
+                studentId: 'STU-EXISTING',
+                createdAt: new Date().toISOString()
+            })
+            setScholarError(data.error || 'Duplicate Scholar Number detected!')
         } else if (res.status === 401 || data?.error === 'Unauthorized') {
             handleUnauthorized()
         } else {
@@ -207,7 +257,9 @@ export default function AddStudentPage() {
         const tableRows = rows.map(([k, v]) =>
             `<tr><td style="border:1px solid #000;padding:5px 8px;width:38%;font-weight:bold;background:#f5f5f5;">${k}</td><td style="border:1px solid #000;padding:5px 8px;">${v}</td></tr>`
         ).join('')
-        const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:12pt;margin:20mm 20mm;}h1{text-align:center;font-size:18pt;}h2{text-align:center;font-size:13pt;text-decoration:underline;margin-bottom:16px;}p{text-align:center;margin:2px 0;}table{width:100%;border-collapse:collapse;margin-bottom:20px;}.sig{display:flex;justify-content:space-between;margin-top:50px;}.sig div{text-align:center;width:42%;border-top:1px solid #000;padding-top:6px;}</style></head><body><h1>${tenant?.name || 'School'}</h1><p>${tenant?.address || ''}</p><p>Ph: ${tenant?.phone || ''} | Email: ${tenant?.email || ''}</p>${tenant?.registrationCode ? `<p><b>School Code: ${tenant.registrationCode}</b></p>` : ''}${tenant?.diseCode ? `<p><b>DISE Code: ${tenant.diseCode}</b></p>` : ''}<h2>STUDENT ADMISSION FORM</h2><table>${tableRows}</table><p style="font-size:10pt;color:#333;">I hereby declare that the information provided above is true and correct.</p><div class="sig"><div>Parent / Guardian Signature<br/><small>Name: ____________________</small><br/><small>Date: ____________________</small></div><div>Authorised Signatory<br/><small>${tenant?.name || 'School Authority'}</small><br/><small>Date: ____________________</small></div></div></body></html>`
+        const schoolCodeVal = tenant?.registrationCode || tenant?.schoolCode || ''
+        const diseVal = tenant?.diseCode || ''
+        const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8"><style>body{font-family:Arial,sans-serif;font-size:12pt;margin:20mm 20mm;}h1{text-align:center;font-size:18pt;}h2{text-align:center;font-size:13pt;text-decoration:underline;margin-bottom:16px;}p{text-align:center;margin:2px 0;}table{width:100%;border-collapse:collapse;margin-bottom:20px;}.sig{display:flex;justify-content:space-between;margin-top:50px;}.sig div{text-align:center;width:42%;border-top:1px solid #000;padding-top:6px;}</style></head><body><h1>${tenant?.name || 'School'}</h1><p>${tenant?.address || ''}</p><p>Ph: ${tenant?.phone || ''} | Email: ${tenant?.email || ''}</p>${schoolCodeVal ? `<p><b>School ID / Code: ${schoolCodeVal}</b></p>` : ''}${diseVal ? `<p><b>DISE Code: ${diseVal}</b></p>` : ''}<h2>STUDENT ADMISSION FORM</h2><table>${tableRows}</table><p style="font-size:10pt;color:#333;">I hereby declare that the information provided above is true and correct.</p><div class="sig"><div>Parent / Guardian Signature<br/><small>Name: ____________________</small><br/><small>Date: ____________________</small></div><div>Authorised Signatory<br/><small>${tenant?.name || 'School Authority'}</small><br/><small>Date: ____________________</small></div></div></body></html>`
         const blob = new Blob(['\ufeff', html], { type: 'application/msword' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a'); a.href = url; a.download = `${form.fullName || 'Student'}_Admission_Form.doc`; a.click()
@@ -234,23 +286,26 @@ export default function AddStudentPage() {
             {/* Duplicate Student Warning Modal */}
             {duplicateInfo && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 99999, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
-                    <div style={{ background: 'var(--surface)', border: '1px solid rgba(239,68,68,0.5)', borderRadius: '20px', padding: '32px', maxWidth: '480px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
+                    <div style={{ background: 'var(--surface)', border: '2px solid rgba(239,68,68,0.7)', borderRadius: '20px', padding: '32px', maxWidth: '500px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.7)' }}>
                         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
                             <div style={{ fontSize: '48px', marginBottom: '12px' }}>⚠️</div>
-                            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#ef4444', marginBottom: '8px' }}>Duplicate Student Detected!</h2>
-                            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>A student with the same Scholar No., Name, and Father&apos;s Name already exists in the system.</p>
+                            <h2 style={{ fontSize: '20px', fontWeight: '800', color: '#ef4444', marginBottom: '8px' }}>Duplicate Scholar No. Detected!</h2>
+                            <p style={{ fontSize: '13px', color: 'var(--text-muted)' }}>A student with this Scholar Number already exists in the system. Duplicate entry is strictly restricted!</p>
+                            <p style={{ fontSize: '12px', color: '#ef4444', fontWeight: 600, marginTop: '4px' }}>इस स्कॉलर नंबर का छात्र पहले से दर्ज है, डुप्लीकेट एंट्री सेव नहीं की जा सकती।</p>
                         </div>
                         <div style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.25)', borderRadius: '12px', padding: '16px', marginBottom: '20px' }}>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                                 {[
-                                    { label: 'Student ID', value: duplicateInfo.studentId },
-                                    { label: 'Full Name', value: duplicateInfo.fullName },
-                                    { label: 'Scholar No.', value: duplicateInfo.scholarNo },
-                                    { label: "Father's Name", value: duplicateInfo.fatherName },
-                                    { label: 'Added On', value: new Date(duplicateInfo.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) },
+                                    { label: 'Scholar No. (स्कॉलर नं.)', value: duplicateInfo.scholarNo },
+                                    { label: 'Existing Student Name', value: duplicateInfo.fullName },
+                                    { label: 'Class / Course', value: duplicateInfo.className || duplicateInfo.courseName || 'N/A' },
+                                    { label: 'Batch / Section', value: duplicateInfo.batchName || 'N/A' },
+                                    { label: "Father's Name", value: duplicateInfo.fatherName || 'N/A' },
+                                    { label: 'Student ID', value: duplicateInfo.studentId || 'N/A' },
+                                    { label: 'Added On', value: duplicateInfo.createdAt ? new Date(duplicateInfo.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'long', year: 'numeric' }) : 'N/A' },
                                 ].map(row => (
                                     <div key={row.label} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
-                                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', minWidth: '110px' }}>{row.label}</span>
+                                        <span style={{ fontSize: '12px', color: 'var(--text-muted)', fontWeight: '600', minWidth: '130px' }}>{row.label}</span>
                                         <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', textAlign: 'right' }}>{row.value}</span>
                                     </div>
                                 ))}
@@ -258,10 +313,10 @@ export default function AddStudentPage() {
                         </div>
                         <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
                             <button onClick={() => setDuplicateInfo(null)} className="btn btn-secondary" style={{ flex: 1 }}>
-                                ✏️ Edit Form
+                                ✏️ Change Scholar No.
                             </button>
-                            <button onClick={() => { setDuplicateInfo(null); window.location.href = '/dashboard/students' }} className="btn" style={{ flex: 1, background: 'linear-gradient(135deg,#ef4444,#b91c1c)', color: 'white', border: 'none' }}>
-                                📋 View Existing
+                            <button onClick={() => { setDuplicateInfo(null); window.open(`/dashboard/students?search=${encodeURIComponent(duplicateInfo.scholarNo)}`, '_blank') }} className="btn" style={{ flex: 1, background: 'linear-gradient(135deg,#ef4444,#b91c1c)', color: 'white', border: 'none' }}>
+                                📋 View Existing Student
                             </button>
                         </div>
                     </div>
@@ -291,7 +346,41 @@ export default function AddStudentPage() {
                         </Field>
                     </div>
                     <div className="grid-cols-2">
-                        <Field label="Scholar No. *"><input className="input" placeholder="1001" value={form.scholarNo} onChange={e => setForm({ ...form, scholarNo: e.target.value })} required /></Field>
+                        <Field label="Scholar No. *">
+                            <div style={{ position: 'relative' }}>
+                                <input 
+                                    className="input" 
+                                    style={scholarError ? { borderColor: '#ef4444', background: 'rgba(239,68,68,0.06)' } : {}}
+                                    placeholder="1001" 
+                                    value={form.scholarNo} 
+                                    onChange={e => {
+                                        setForm({ ...form, scholarNo: e.target.value })
+                                        if (scholarError) setScholarError('')
+                                    }} 
+                                    onBlur={checkScholarDuplicate}
+                                    required 
+                                />
+                                {scholarChecking && (
+                                    <span style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', fontSize: '11px', color: 'var(--text-muted)' }}>
+                                        Checking...
+                                    </span>
+                                )}
+                            </div>
+                            {scholarError && (
+                                <div style={{ marginTop: '6px', fontSize: '12px', color: '#ef4444', fontWeight: '600', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <span>{scholarError}</span>
+                                    {duplicateInfo && (
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setDuplicateInfo(duplicateInfo)}
+                                            style={{ background: 'none', border: 'none', color: '#3b82f6', textDecoration: 'underline', cursor: 'pointer', fontSize: '12px', padding: 0 }}
+                                        >
+                                            View Details
+                                        </button>
+                                    )}
+                                </div>
+                            )}
+                        </Field>
                         <Field label="Full Name *"><input className="input" placeholder="Arjun Sharma" value={form.fullName} onChange={e => setForm({ ...form, fullName: e.target.value })} required /></Field>
                         <Field label="Phone Number *"><input className="input" type="tel" placeholder="9876543210" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} required /></Field>
                         <Field label="Father's Name"><input className="input" placeholder="Ramesh Sharma" value={form.fatherName} onChange={e => setForm({ ...form, fatherName: e.target.value })} /></Field>
@@ -483,7 +572,13 @@ export default function AddStudentPage() {
                             <div style={{ fontSize: '17pt', fontWeight: '900', textTransform: 'uppercase', color: tenant?.themeColor || '#000' }}>{tenant?.name || 'School Name'}</div>
                             {tenant?.address && <div style={{ fontSize: '9pt', marginTop: '2px' }}>{tenant.address}</div>}
                             <div style={{ fontSize: '9pt' }}>{tenant?.phone && `Ph: ${tenant.phone}`}{tenant?.phone && tenant?.email && '  |  '}{tenant?.email && `Email: ${tenant.email}`}</div>
-                            {(tenant?.registrationCode || tenant?.diseCode) && (<div style={{ fontSize: '9pt', fontWeight: '700', marginTop: '2px' }}>{tenant?.registrationCode && `School Code: ${tenant.registrationCode}`}{tenant?.registrationCode && tenant?.diseCode && '   |   '}{tenant?.diseCode && `DISE Code: ${tenant.diseCode}`}</div>)}
+                            {((tenant?.registrationCode || tenant?.schoolCode) || tenant?.diseCode) && (
+                                <div style={{ fontSize: '9pt', fontWeight: '700', marginTop: '2px' }}>
+                                    {(tenant?.registrationCode || tenant?.schoolCode) && `School ID: ${tenant.registrationCode || tenant.schoolCode}`}
+                                    {(tenant?.registrationCode || tenant?.schoolCode) && tenant?.diseCode && '   |   '}
+                                    {tenant?.diseCode && `DISE Code: ${tenant.diseCode}`}
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

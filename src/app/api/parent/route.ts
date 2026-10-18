@@ -9,7 +9,21 @@ export async function GET(req: NextRequest) {
   const profile = await prisma.parentProfile.findUnique({
     where: { userId: user!.userId },
     include: {
-      tenant: { select: { name: true } },
+      tenant: {
+        select: {
+          id: true,
+          name: true,
+          logo: true,
+          schoolCode: true,
+          registrationCode: true,
+          diseCode: true,
+          address: true,
+          phone: true,
+          email: true,
+          themeColor: true,
+          directorSign: true,
+        },
+      },
       children: {
         include: {
           course: { select: { name: true, subjects: true } },

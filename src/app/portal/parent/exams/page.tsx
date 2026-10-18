@@ -212,19 +212,30 @@ export default function ParentExams() {
                                 {profile?.tenant?.logo && (
                                     <img src={profile.tenant.logo} alt="School Logo" style={{ height: '60px', objectFit: 'contain', marginBottom: '8px' }} crossOrigin="anonymous" />
                                 )}
-                                <h2 style={{ margin: '0 0 8px 0', fontSize: '24px', fontWeight: '800' }}>{schoolName}</h2>
-                                <h3 style={{ margin: '0 0 4px 0', fontSize: '18px', fontWeight: '600', color: '#10b981' }}>{examTitle}</h3>
-                                <p style={{ margin: 0, fontSize: '14px', color: '#94a3b8' }}>Academic Year: {currentYear}</p>
+                                <h2 style={{ margin: '0 0 4px 0', fontSize: '24px', fontWeight: '800' }}>{schoolName}</h2>
+                                {profile?.tenant?.address && <p style={{ margin: '2px 0', fontSize: '12px', color: '#94a3b8' }}>{profile.tenant.address}</p>}
+                                <p style={{ margin: '2px 0', fontSize: '12px', color: '#94a3b8' }}>{profile?.tenant?.phone ? `Ph: ${profile.tenant.phone}` : ''}{profile?.tenant?.phone && profile?.tenant?.email ? ' | ' : ''}{profile?.tenant?.email ? profile.tenant.email : ''}</p>
+                                {((profile?.tenant?.registrationCode || profile?.tenant?.schoolCode) || profile?.tenant?.diseCode) && (
+                                    <div style={{ fontSize: '12px', fontWeight: '700', color: '#10b981', marginTop: '4px' }}>
+                                        {(profile?.tenant?.registrationCode || profile?.tenant?.schoolCode) && <span>School ID: {profile.tenant.registrationCode || profile.tenant.schoolCode}</span>}
+                                        {(profile?.tenant?.registrationCode || profile?.tenant?.schoolCode) && profile?.tenant?.diseCode && <span> &nbsp;|&nbsp; </span>}
+                                        {profile?.tenant?.diseCode && <span>DISE Code: {profile.tenant.diseCode}</span>}
+                                    </div>
+                                )}
+                                <h3 style={{ margin: '12px 0 4px 0', fontSize: '18px', fontWeight: '600', color: '#10b981' }}>{examTitle}</h3>
+                                <p style={{ margin: 0, fontSize: '13px', color: '#94a3b8' }}>Academic Year: {currentYear}</p>
                             </div>
 
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '14px' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '20px', fontSize: '14px', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px', border: '1px solid #334155' }}>
                                 <div>
                                     <p style={{ margin: '4px 0' }}><strong>Student Name:</strong> {currentChild.fullName}</p>
+                                    <p style={{ margin: '4px 0' }}><strong>Scholar No.:</strong> {currentChild.scholarNo || 'N/A'}</p>
                                     <p style={{ margin: '4px 0' }}><strong>Class:</strong> {currentChild.course?.name}</p>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
                                     <p style={{ margin: '4px 0' }}><strong>Section:</strong> {currentChild.batch?.name}</p>
-                                    <p style={{ margin: '4px 0' }}><strong>Roll/ID:</strong> {currentChild.studentId || 'N/A'}</p>
+                                    <p style={{ margin: '4px 0' }}><strong>Student ID:</strong> {currentChild.studentId || 'N/A'}</p>
+                                    <p style={{ margin: '4px 0' }}><strong>Father&apos;s Name:</strong> {currentChild.fatherName || 'N/A'}</p>
                                 </div>
                             </div>
 
@@ -258,13 +269,17 @@ export default function ParentExams() {
                             </table>
 
                             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '40px', paddingTop: '20px', borderTop: '1px dashed #334155', fontSize: '14px', color: '#94a3b8' }}>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ height: '40px' }}></div>
+                                <div style={{ textAlign: 'center', width: '160px' }}>
+                                    <div style={{ height: '36px' }}></div>
                                     <div style={{ borderTop: '1px solid #94a3b8', paddingTop: '4px' }}>Class Teacher</div>
                                 </div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ height: '40px' }}></div>
-                                    <div style={{ borderTop: '1px solid #94a3b8', paddingTop: '4px' }}>Principal</div>
+                                <div style={{ textAlign: 'center', width: '160px' }}>
+                                    {profile?.tenant?.directorSign ? (
+                                        <img src={profile.tenant.directorSign} alt="Principal Signature" style={{ height: '36px', objectFit: 'contain', marginBottom: '2px' }} crossOrigin="anonymous" />
+                                    ) : (
+                                        <div style={{ height: '36px' }}></div>
+                                    )}
+                                    <div style={{ borderTop: '1px solid #94a3b8', paddingTop: '4px' }}>Principal / Director</div>
                                 </div>
                             </div>
                         </div>
