@@ -1,21 +1,46 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 export const viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0f172a" },
+    { media: "(prefers-color-scheme: light)", color: "#6366f1" },
+  ],
 };
 
 export const metadata: Metadata = {
   title: "Scalevo — Multitenant School ERP Platform",
   description: "Scalevo is a complete multitenant School ERP platform — manage students, fees, attendance, exams, transport and parent communication. Register your school for free.",
   keywords: "Scalevo, School ERP, School Management System, student portal, fee management, multitenant school software",
+  manifest: "/manifest.json",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Scalevo",
+    startupImage: [
+      { url: "/icons/icon-512x512.png" },
+    ],
+  },
   openGraph: {
     title: "Scalevo — School ERP Platform",
     description: "Complete multitenant School ERP — Register your school free on Scalevo",
     type: "website",
+  },
+  icons: {
+    icon: [
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+      { url: "/icons/icon-512x512.png", sizes: "512x512", type: "image/png" },
+    ],
+    apple: [
+      { url: "/icons/icon-152x152.png", sizes: "152x152", type: "image/png" },
+      { url: "/icons/icon-192x192.png", sizes: "192x192", type: "image/png" },
+    ],
+    shortcut: "/icons/icon-192x192.png",
   },
 };
 
@@ -31,12 +56,34 @@ export default function RootLayout({
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
         <script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
+
+        {/* PWA Meta Tags */}
+        <meta name="application-name" content="Scalevo" />
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Scalevo" />
+        <meta name="msapplication-TileColor" content="#6366f1" />
+        <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+
+        {/* Apple Touch Icons */}
+        <link rel="apple-touch-icon" href="/icons/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+        <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192x192.png" />
+
+        {/* Favicons */}
+        <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-96x96.png" />
+        <link rel="icon" type="image/png" sizes="16x16" href="/icons/icon-72x72.png" />
       </head>
       <body suppressHydrationWarning>
         {/* Screenshot / Screen-capture shield overlay */}
         <div id="screenshot-shield" className="screenshot-shield" aria-hidden="true" />
 
         {children}
+
+        {/* PWA Install Prompt */}
+        <PWAInstallPrompt />
 
         {/* Screenshot prevention script */}
         <script dangerouslySetInnerHTML={{ __html: `

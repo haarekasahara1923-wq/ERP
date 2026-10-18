@@ -141,6 +141,27 @@ function DashboardSidebar({ open, onClose }: { open: boolean; onClose: () => voi
     const isSuperAdmin = user?.role === 'SUPER_ADMIN'
     const allNavItems = getNavForRole(user?.role || 'COACHING_ADMIN')
 
+    // PWA install prompt
+    const [installPrompt, setInstallPrompt] = useState<any>(null)
+    const [isInstalled, setIsInstalled] = useState(false)
+
+    useEffect(() => {
+        if (window.matchMedia('(display-mode: standalone)').matches) {
+            setIsInstalled(true)
+        }
+        const handler = (e: any) => { e.preventDefault(); setInstallPrompt(e) }
+        window.addEventListener('beforeinstallprompt', handler)
+        window.addEventListener('appinstalled', () => { setIsInstalled(true); setInstallPrompt(null) })
+        return () => window.removeEventListener('beforeinstallprompt', handler)
+    }, [])
+
+    const handleInstall = async () => {
+        if (!installPrompt) return
+        await installPrompt.prompt()
+        const { outcome } = await installPrompt.userChoice
+        if (outcome === 'accepted') { setIsInstalled(true); setInstallPrompt(null) }
+    }
+
     return (
         <>
             {open && <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1049 }} className="hide-desktop" />}
@@ -197,6 +218,31 @@ function DashboardSidebar({ open, onClose }: { open: boolean; onClose: () => voi
                                 <div style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase' }}>{user?.role?.replace('_', ' ')}</div>
                             </div>
                         </div>
+                        {/* PWA Install Button */}
+                        {installPrompt && !isInstalled && (
+                            <button
+                                onClick={handleInstall}
+                                style={{
+                                    width: '100%',
+                                    marginBottom: '8px',
+                                    padding: '9px 12px',
+                                    background: 'linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: '10px',
+                                    fontWeight: 600,
+                                    fontSize: '13px',
+                                    cursor: 'pointer',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    gap: '6px',
+                                    boxShadow: '0 4px 16px rgba(99,102,241,0.35)',
+                                }}
+                            >
+                                📲 Install App
+                            </button>
+                        )}
                         <button onClick={logout} className="btn btn-secondary" style={{ width: '100%', justifyContent: 'center', padding: '8px', fontSize: '13px' }}>
                             🚪 Logout
                         </button>
