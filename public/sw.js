@@ -1,9 +1,9 @@
 // Scalevo ERP - Service Worker
 // Handles: caching, offline support, push notifications, background sync
 
-const CACHE_NAME = 'scalevo-v1';
-const STATIC_CACHE = 'scalevo-static-v1';
-const API_CACHE = 'scalevo-api-v1';
+const CACHE_NAME = 'scalevo-v2';
+const STATIC_CACHE = 'scalevo-static-v2';
+const API_CACHE = 'scalevo-api-v2';
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = [
