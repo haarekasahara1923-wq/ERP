@@ -1,9 +1,21 @@
 'use client'
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, useMemo } from 'react'
 import { useAuth } from '@/contexts/AuthContext'
 import Link from 'next/link'
 import Script from 'next/script'
 import { formatDate, formatCurrency } from '@/lib/utils'
+import { downloadCSV, downloadExcel, generateAndPrintPDF } from '@/lib/reportExport'
+
+interface CourseOption {
+    id: string
+    name: string
+}
+
+interface BatchOption {
+    id: string
+    name: string
+    courseId: string
+}
 
 interface Student {
     id: string
@@ -75,6 +87,15 @@ export default function StudentsPage() {
     const [editForm, setEditForm] = useState<any>({})
     const [actionLoading, setActionLoading] = useState(false)
 
+    // Selection & Filter states
+    const [filterMode, setFilterMode] = useState<'classwise' | 'name' | 'scholarNo' | 'all'>('classwise')
+    const [courses, setCourses] = useState<CourseOption[]>([])
+    const [batches, setBatches] = useState<BatchOption[]>([])
+    const [selectedCourseId, setSelectedCourseId] = useState<string>('')
+    const [selectedBatchId, setSelectedBatchId] = useState<string>('')
+    const [allStudentNames, setAllStudentNames] = useState<string[]>([])
+    const [allScholarNos, setAllScholarNos] = useState<string[]>([])
+
     // Sibling states
     const [showSiblingModal, setShowSiblingModal] = useState(false)
     const [siblingSearch, setSiblingSearch] = useState('')
@@ -83,6 +104,272 @@ export default function StudentsPage() {
     const [currentSiblings, setCurrentSiblings] = useState<SiblingStudent[]>([])
     const [siblingsLoading, setSiblingsLoading] = useState(false)
     const [addingSibling, setAddingSibling] = useState(false)
+
+    // Fetch courses and batches for dropdowns
+    useEffect(() => {
+        if (!token) return
+        Promise.all([
+            fetch('/api/courses', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => ({})),
+            fetch('/api/batches', { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json()).catch(() => ({})),
+        ]).then(([c, b]) => {
+            if (c?.success) setCourses(c.data || [])
+            if (b?.success) setBatches(b.data || [])
+        }).catch(err => console.error('Error fetching courses/batches', err))
+    }, [token])
+
+    const availableBatches = useMemo(() => {
+        if (!selectedCourseId) return []
+        return batches.filter(b => b.courseId === selectedCourseId)
+    }, [batches, selectedCourseId])
+
+    const fetchStudents = useCallback(async () => {
+        if (!token) return
+        setLoading(true)
+        const params = new URLSearchParams()
+        
+        if (filterMode === 'classwise') {
+            if (selectedCourseId) params.set('courseId', selectedCourseId)
+            if (selectedBatchId) params.set('batchId', selectedBatchId)
+            if (search.trim()) params.set('search', search.trim())
+        } else if (filterMode === 'name') {
+            if (search.trim()) {
+                params.set('search', search.trim())
+                params.set('searchBy', 'name')
+            }
+        } else if (filterMode === 'scholarNo') {
+            if (search.trim()) {
+                params.set('search', search.trim())
+                params.set('searchBy', 'scholarNo')
+            }
+        } else {
+            if (search.trim()) params.set('search', search.trim())
+        }
+
+        try {
+            const res = await fetch(`/api/students?${params}`, { headers: { Authorization: `Bearer ${token}` } })
+            const data = await res.json()
+            if (data.success) {
+                // Fetch sibling counts to flag students that have siblings
+                const siblingRes = await fetch('/api/students/siblings/counts', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null)
+                const siblingData = siblingRes ? await siblingRes.json().catch(() => null) : null
+                const siblingSet: Set<string> = new Set(siblingData?.success ? siblingData.data : [])
+                const mapped = data.data.map((s: Student) => ({ ...s, hasSiblings: siblingSet.has(s.id) }))
+                setStudents(mapped)
+
+                // Store unique student names and scholar numbers for autocomplete datalists
+                if (!search && !selectedCourseId) {
+                    const names = Array.from(new Set(mapped.map((s: Student) => s.fullName).filter(Boolean))) as string[]
+                    const scholars = Array.from(new Set(mapped.map((s: Student) => s.scholarNo || s.studentId).filter(Boolean))) as string[]
+                    setAllStudentNames(names)
+                    setAllScholarNos(scholars)
+                }
+            }
+        } catch (err) {
+            console.error('Failed to fetch students', err)
+        }
+        setLoading(false)
+    }, [token, filterMode, selectedCourseId, selectedBatchId, search])
+
+    // Download / Export helpers
+    const getExportContext = () => {
+        const curCourse = courses.find(c => c.id === selectedCourseId)
+        const curBatch = batches.find(b => b.id === selectedBatchId)
+        
+        let label = 'All Students'
+        if (filterMode === 'classwise') {
+            if (curCourse && curBatch) label = `${curCourse.name} - ${curBatch.name}`
+            else if (curCourse) label = `${curCourse.name} (All Batches)`
+            else label = 'All Classes'
+        } else if (filterMode === 'name') {
+            label = search ? `Student Name (${search})` : 'Student Name Filter'
+        } else if (filterMode === 'scholarNo') {
+            label = search ? `Scholar No (${search})` : 'Scholar No Filter'
+        }
+
+        const dateStr = new Date().toISOString().split('T')[0]
+        const cleanLabel = label.replace(/[^a-zA-Z0-9_-]/g, '_')
+        return { label, filename: `Students_${cleanLabel}_${dateStr}` }
+    }
+
+    const handleDownloadCSV = () => {
+        if (students.length === 0) {
+            alert('No students found to download.')
+            return
+        }
+        const { label, filename } = getExportContext()
+        const rows: (string | number)[][] = [
+            [`${(tenant?.name || 'UNIVERSAL DAY BOARDING ACADEMY').toUpperCase()} - STUDENT LIST`],
+            [`Category / Filter: ${label}`],
+            [`Generated On: ${new Date().toLocaleString('en-IN')}`],
+            [`Total Students: ${students.length}`],
+            [''],
+            [
+                'S.No.',
+                'Scholar No.',
+                'Student ID',
+                'Student Name',
+                'Class / Course',
+                'Section / Batch',
+                "Father's Name",
+                'Student Phone',
+                'Parent Phone',
+                'Admission Date',
+                'Total Fee (INR)',
+                'Paid Fee (INR)',
+                'Due Fee (INR)',
+                'Status'
+            ]
+        ]
+
+        students.forEach((s, idx) => {
+            const due = Math.max(0, (s.totalFee || 0) - (s.paidFee || 0))
+            rows.push([
+                idx + 1,
+                s.scholarNo || '-',
+                s.studentId || '-',
+                s.fullName,
+                s.courseName || '-',
+                s.batchName || '-',
+                s.fatherName || '-',
+                s.phone || '-',
+                s.parentPhone || '-',
+                s.admissionDate ? formatDate(s.admissionDate) : '-',
+                s.totalFee || 0,
+                s.paidFee || 0,
+                due,
+                s.status || 'ACTIVE'
+            ])
+        })
+
+        downloadCSV(`${filename}.csv`, rows)
+    }
+
+    const handleDownloadExcel = () => {
+        if (students.length === 0) {
+            alert('No students found to download.')
+            return
+        }
+        const { label, filename } = getExportContext()
+        const totalFees = students.reduce((sum, s) => sum + (s.totalFee || 0), 0)
+        const totalPaid = students.reduce((sum, s) => sum + (s.paidFee || 0), 0)
+        const totalDue = Math.max(0, totalFees - totalPaid)
+
+        downloadExcel(filename, [
+            {
+                title: `${tenant?.name || 'School ERP'} - Student Directory`,
+                headerLines: [
+                    `Class / Filter: ${label}`,
+                    `Generated On: ${new Date().toLocaleString('en-IN')}`,
+                    `Total Students Count: ${students.length}`
+                ],
+                headers: [
+                    'S.No.',
+                    'Scholar No.',
+                    'Student ID',
+                    'Student Name',
+                    'Class',
+                    'Section / Batch',
+                    "Father's Name",
+                    'Student Phone',
+                    'Parent Phone',
+                    'Admission Date',
+                    'Total Fee (₹)',
+                    'Paid Fee (₹)',
+                    'Due Fee (₹)',
+                    'Status'
+                ],
+                rows: students.map((s, idx) => [
+                    idx + 1,
+                    s.scholarNo || '-',
+                    s.studentId || '-',
+                    s.fullName,
+                    s.courseName || '-',
+                    s.batchName || '-',
+                    s.fatherName || '-',
+                    s.phone || '-',
+                    s.parentPhone || '-',
+                    s.admissionDate ? formatDate(s.admissionDate) : '-',
+                    s.totalFee || 0,
+                    s.paidFee || 0,
+                    Math.max(0, (s.totalFee || 0) - (s.paidFee || 0)),
+                    s.status || 'ACTIVE'
+                ]),
+                footer: [
+                    'Total',
+                    '',
+                    '',
+                    `${students.length} Students`,
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    '',
+                    totalFees,
+                    totalPaid,
+                    totalDue,
+                    ''
+                ]
+            }
+        ])
+    }
+
+    const handleDownloadPDF = () => {
+        if (students.length === 0) {
+            alert('No students found to download.')
+            return
+        }
+        const { label } = getExportContext()
+        const totalFees = students.reduce((sum, s) => sum + (s.totalFee || 0), 0)
+        const totalPaid = students.reduce((sum, s) => sum + (s.paidFee || 0), 0)
+        const totalDue = Math.max(0, totalFees - totalPaid)
+        const activeCount = students.filter(s => s.status === 'ACTIVE').length
+
+        generateAndPrintPDF({
+            title: `Student Roster • ${label}`,
+            subtitle: `Official Enrollment & Class Directory (${students.length} Students)`,
+            schoolName: tenant?.name || 'Universal Day Boarding Academy',
+            schoolAddress: '📍 Official Institution Student Registry',
+            stats: [
+                { label: 'Total Students', value: students.length, subtext: `${activeCount} Active`, color: '#6366f1' },
+                { label: 'Total Billed', value: `₹${totalFees.toLocaleString('en-IN')}`, subtext: 'Course Fees', color: '#10b981' },
+                { label: 'Total Collected', value: `₹${totalPaid.toLocaleString('en-IN')}`, subtext: 'Received Amount', color: '#10b981' },
+                { label: 'Pending Dues', value: `₹${totalDue.toLocaleString('en-IN')}`, subtext: 'Outstanding Fees', color: '#ef4444' }
+            ],
+            tables: [
+                {
+                    title: `Students List - ${label}`,
+                    headers: [
+                        'S.No.',
+                        'Scholar No.',
+                        'Student Name',
+                        'Class / Section',
+                        "Father's Name",
+                        'Phone',
+                        'Admission',
+                        'Total Fee',
+                        'Paid Fee',
+                        'Due Fee',
+                        'Status'
+                    ],
+                    rows: students.map((s, idx) => [
+                        idx + 1,
+                        s.scholarNo || s.studentId || '-',
+                        s.fullName,
+                        `${s.courseName || '-'} / ${s.batchName || '-'}`,
+                        s.fatherName || '-',
+                        s.phone || '-',
+                        s.admissionDate ? formatDate(s.admissionDate) : '-',
+                        `₹${(s.totalFee || 0).toLocaleString('en-IN')}`,
+                        `₹${(s.paidFee || 0).toLocaleString('en-IN')}`,
+                        `₹${Math.max(0, (s.totalFee || 0) - (s.paidFee || 0)).toLocaleString('en-IN')}`,
+                        s.status || 'ACTIVE'
+                    ])
+                }
+            ],
+            notes: `This is an official computer-generated student record for ${label}. Generated on ${new Date().toLocaleString('en-IN')}.`
+        })
+    }
 
     const downloadPDF = (elementId: string, title: string) => {
         const original = document.getElementById(elementId)
@@ -133,22 +420,6 @@ export default function StudentsPage() {
         // @ts-ignore
         window.html2pdf().set(opt).from(clone).save().then(() => document.body.removeChild(wrapper)).catch(() => document.body.removeChild(wrapper))
     }
-
-    const fetchStudents = useCallback(async () => {
-        if (!token) return
-        const params = new URLSearchParams()
-        if (search) params.set('search', search)
-        const res = await fetch(`/api/students?${params}`, { headers: { Authorization: `Bearer ${token}` } })
-        const data = await res.json()
-        if (data.success) {
-            // Fetch sibling counts to flag students that have siblings
-            const siblingRes = await fetch('/api/students/siblings/counts', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null)
-            const siblingData = siblingRes ? await siblingRes.json().catch(() => null) : null
-            const siblingSet: Set<string> = new Set(siblingData?.success ? siblingData.data : [])
-            setStudents(data.data.map((s: Student) => ({ ...s, hasSiblings: siblingSet.has(s.id) })))
-        }
-        setLoading(false)
-    }, [token, search])
 
     const fetchSiblingsForStudent = async (studentId: string) => {
         setSiblingsLoading(true)
@@ -300,7 +571,9 @@ export default function StudentsPage() {
         }
     }
 
-    useEffect(() => { fetchStudents() }, [token, search])
+    useEffect(() => {
+        fetchStudents()
+    }, [fetchStudents])
 
     return (
         <div>
@@ -308,30 +581,277 @@ export default function StudentsPage() {
             <div className="page-header">
                 <div>
                     <h1 className="page-title">👨‍🎓 Students</h1>
-                    <p className="page-subtitle">{students.length} students registered</p>
+                    <p className="page-subtitle">
+                        {selectedCourseId ? (
+                            <>
+                                Filtered: <strong>{courses.find(c => c.id === selectedCourseId)?.name}</strong>
+                                {selectedBatchId && <> ({batches.find(b => b.id === selectedBatchId)?.name})</>} • {students.length} students found
+                            </>
+                        ) : (
+                            <>{students.length} students registered</>
+                        )}
+                    </p>
                 </div>
-                <div style={{ display: 'flex', gap: '10px' }}>
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                        onClick={handleDownloadPDF}
+                        disabled={students.length === 0}
+                        className="btn btn-secondary"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+                        title="Download / Print PDF"
+                    >
+                        📄 PDF
+                    </button>
+                    <button
+                        onClick={handleDownloadExcel}
+                        disabled={students.length === 0}
+                        className="btn btn-secondary"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+                        title="Download Excel spreadsheet"
+                    >
+                        📊 Excel
+                    </button>
+                    <button
+                        onClick={handleDownloadCSV}
+                        disabled={students.length === 0}
+                        className="btn btn-secondary"
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', fontSize: '13px' }}
+                        title="Download CSV"
+                    >
+                        📑 CSV
+                    </button>
                     <Link href="/dashboard/students/add" className="btn btn-primary">➕ Add Student</Link>
                 </div>
             </div>
 
-            {/* Search & Filter */}
-            <div className="card" style={{ marginBottom: '20px', padding: '16px' }}>
-                <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-                    <div style={{ flex: 1, minWidth: '200px', display: 'flex', gap: '8px' }}>
-                        <input
-                            className="input"
-                            style={{ flex: 1 }}
-                            placeholder="🔍 Search by name, scholar no. or mobile no..."
-                            value={search}
-                            onChange={e => setSearch(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && fetchStudents()}
-                        />
-                        <button className="btn btn-primary" onClick={fetchStudents} style={{ whiteSpace: 'nowrap' }}>
-                            🔍 Search
+            {/* Selection & Filter Bar */}
+            <div className="card" style={{ marginBottom: '20px', padding: '18px', border: '1px solid var(--border)', borderRadius: '14px', boxShadow: '0 2px 8px rgba(0,0,0,0.03)' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    {/* Top Mode Selector Bar */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '13px', fontWeight: '700', color: 'var(--text-primary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                                🎯 Selection Mode:
+                            </span>
+                            <select
+                                className="input"
+                                value={filterMode}
+                                onChange={e => {
+                                    const mode = e.target.value as any
+                                    setFilterMode(mode)
+                                    setSearch('')
+                                    if (mode !== 'classwise') {
+                                        setSelectedCourseId('')
+                                        setSelectedBatchId('')
+                                    }
+                                }}
+                                style={{ minWidth: '220px', fontWeight: '600', borderColor: 'var(--primary)', cursor: 'pointer', background: 'var(--surface-2)' }}
+                            >
+                                <option value="classwise">🏫 Classwise Selection (कक्षा एवं बैच)</option>
+                                <option value="name">👤 Student Name (विद्यार्थी नाम)</option>
+                                <option value="scholarNo">🪪 Scholar No. (स्कॉलर नंबर)</option>
+                                <option value="all">🌐 All Students (सभी विद्यार्थी)</option>
+                            </select>
+                        </div>
+
+                        {/* Reset Filter Button */}
+                        <button
+                            className="btn btn-secondary btn-sm"
+                            onClick={() => {
+                                setSearch('')
+                                setSelectedCourseId('')
+                                setSelectedBatchId('')
+                                fetchStudents()
+                            }}
+                            title="Reset all filters and view all students"
+                            style={{ display: 'inline-flex', alignItems: 'center', gap: '6px' }}
+                        >
+                            🔄 Reset All
                         </button>
                     </div>
-                    <button className="btn btn-secondary" onClick={() => { setSearch(''); setTimeout(fetchStudents, 0); }}>🔄 Refresh</button>
+
+                    {/* Mode: Classwise Selection */}
+                    {filterMode === 'classwise' && (
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--surface-2)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                            {/* Class Dropdown */}
+                            <div style={{ flex: '1 1 240px' }}>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '5px' }}>
+                                    🏫 Select Class / Course <span style={{ color: '#ef4444' }}>*</span>
+                                </label>
+                                <select
+                                    className="input"
+                                    value={selectedCourseId}
+                                    onChange={e => {
+                                        setSelectedCourseId(e.target.value)
+                                        setSelectedBatchId('')
+                                    }}
+                                    style={{ width: '100%', fontWeight: '600' }}
+                                >
+                                    <option value="">-- All Added Classes --</option>
+                                    {courses.map(c => (
+                                        <option key={c.id} value={c.id}>
+                                            {c.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Batch / Section Dropdown */}
+                            <div style={{ flex: '1 1 240px' }}>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '5px' }}>
+                                    👥 Select Batch / Section (Optional)
+                                </label>
+                                <select
+                                    className="input"
+                                    value={selectedBatchId}
+                                    onChange={e => setSelectedBatchId(e.target.value)}
+                                    disabled={!selectedCourseId}
+                                    style={{ width: '100%', opacity: selectedCourseId ? 1 : 0.6 }}
+                                >
+                                    <option value="">
+                                        {!selectedCourseId 
+                                            ? '-- Select class first --' 
+                                            : availableBatches.length === 0 
+                                                ? '-- No batches added for this class --' 
+                                                : '-- All Batches / Sections --'}
+                                    </option>
+                                    {availableBatches.map(b => (
+                                        <option key={b.id} value={b.id}>
+                                            {b.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Search inside selected class */}
+                            <div style={{ flex: '1 1 200px' }}>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '600', color: 'var(--text-muted)', marginBottom: '5px' }}>
+                                    🔍 Search in Class
+                                </label>
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                    <input
+                                        className="input"
+                                        placeholder="Name or scholar no..."
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && fetchStudents()}
+                                        style={{ flex: 1 }}
+                                    />
+                                    {search && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-secondary btn-sm"
+                                            onClick={() => setSearch('')}
+                                            title="Clear search text"
+                                        >
+                                            ✕
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Mode: Student Name Search */}
+                    {filterMode === 'name' && (
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--surface-2)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                            <div style={{ flex: 1, minWidth: '280px' }}>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '5px' }}>
+                                    👤 Enter or Select Student Name
+                                </label>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input
+                                        className="input"
+                                        list="student-names-suggestions"
+                                        placeholder="Type or click dropdown arrow to select student by name..."
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && fetchStudents()}
+                                        style={{ flex: 1 }}
+                                        autoFocus
+                                    />
+                                    <datalist id="student-names-suggestions">
+                                        {allStudentNames.map(name => (
+                                            <option key={name} value={name} />
+                                        ))}
+                                    </datalist>
+                                    <button className="btn btn-primary" onClick={fetchStudents} style={{ whiteSpace: 'nowrap' }}>
+                                        🔍 Search
+                                    </button>
+                                    {search && (
+                                        <button className="btn btn-secondary" onClick={() => setSearch('')}>
+                                            ✕ Clear
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Mode: Scholar No Search */}
+                    {filterMode === 'scholarNo' && (
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--surface-2)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                            <div style={{ flex: 1, minWidth: '280px' }}>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '5px' }}>
+                                    🪪 Enter or Select Scholar No. / ID
+                                </label>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input
+                                        className="input"
+                                        list="student-scholars-suggestions"
+                                        placeholder="Type or click dropdown arrow to select Scholar No. / ID..."
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && fetchStudents()}
+                                        style={{ flex: 1 }}
+                                        autoFocus
+                                    />
+                                    <datalist id="student-scholars-suggestions">
+                                        {allScholarNos.map(s => (
+                                            <option key={s} value={s} />
+                                        ))}
+                                    </datalist>
+                                    <button className="btn btn-primary" onClick={fetchStudents} style={{ whiteSpace: 'nowrap' }}>
+                                        🔍 Search
+                                    </button>
+                                    {search && (
+                                        <button className="btn btn-secondary" onClick={() => setSearch('')}>
+                                            ✕ Clear
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Mode: All Students Search */}
+                    {filterMode === 'all' && (
+                        <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', alignItems: 'center', background: 'var(--surface-2)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border)' }}>
+                            <div style={{ flex: 1, minWidth: '280px' }}>
+                                <label style={{ display: 'block', fontSize: '12px', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '5px' }}>
+                                    🔍 Search Across Name, Scholar No, Phone or Student ID
+                                </label>
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                    <input
+                                        className="input"
+                                        placeholder="Search by name, scholar no, phone or ID..."
+                                        value={search}
+                                        onChange={e => setSearch(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && fetchStudents()}
+                                        style={{ flex: 1 }}
+                                    />
+                                    <button className="btn btn-primary" onClick={fetchStudents} style={{ whiteSpace: 'nowrap' }}>
+                                        🔍 Search
+                                    </button>
+                                    {search && (
+                                        <button className="btn btn-secondary" onClick={() => setSearch('')}>
+                                            ✕ Clear
+                                        </button>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -457,6 +977,119 @@ export default function StudentsPage() {
                             </tbody>
                         </table>
                     )}
+                </div>
+            </div>
+
+            {/* Download & Export Section (Below the Student List) */}
+            <div
+                className="card"
+                style={{
+                    marginTop: '20px',
+                    padding: '20px 24px',
+                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.05), rgba(16, 185, 129, 0.05))',
+                    border: '1px solid rgba(99, 102, 241, 0.2)',
+                    borderRadius: '16px',
+                    display: 'flex',
+                    flexWrap: 'wrap',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: '16px',
+                    boxShadow: '0 4px 14px rgba(0,0,0,0.03)'
+                }}
+            >
+                <div style={{ minWidth: '240px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                        <span style={{ fontSize: '20px' }}>📥</span>
+                        <h3 style={{ fontSize: '16px', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
+                            Download & Export Student List
+                        </h3>
+                    </div>
+                    <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                        {selectedCourseId ? (
+                            <>
+                                Active Class: <strong style={{ color: 'var(--primary)' }}>{courses.find(c => c.id === selectedCourseId)?.name}</strong>
+                                {selectedBatchId && <> | Batch: <strong style={{ color: 'var(--primary)' }}>{batches.find(b => b.id === selectedBatchId)?.name}</strong></>}
+                                {' '}• ({students.length} students)
+                            </>
+                        ) : (
+                            <>Currently showing <strong>{students.length}</strong> students</>
+                        )}
+                    </p>
+                </div>
+
+                {/* 3 Download Buttons */}
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    <button
+                        onClick={handleDownloadPDF}
+                        disabled={students.length === 0}
+                        className="btn"
+                        style={{
+                            background: '#ef4444',
+                            color: '#ffffff',
+                            fontWeight: '700',
+                            fontSize: '13px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            boxShadow: '0 2px 8px rgba(239, 68, 68, 0.3)',
+                            border: 'none',
+                            cursor: students.length === 0 ? 'not-allowed' : 'pointer',
+                            opacity: students.length === 0 ? 0.5 : 1
+                        }}
+                        title="Download official PDF roster"
+                    >
+                        <span>📄</span> Download in PDF
+                    </button>
+
+                    <button
+                        onClick={handleDownloadExcel}
+                        disabled={students.length === 0}
+                        className="btn"
+                        style={{
+                            background: '#10b981',
+                            color: '#ffffff',
+                            fontWeight: '700',
+                            fontSize: '13px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)',
+                            border: 'none',
+                            cursor: students.length === 0 ? 'not-allowed' : 'pointer',
+                            opacity: students.length === 0 ? 0.5 : 1
+                        }}
+                        title="Download formatted Excel spreadsheet"
+                    >
+                        <span>📊</span> Download in Excel (.xlsx)
+                    </button>
+
+                    <button
+                        onClick={handleDownloadCSV}
+                        disabled={students.length === 0}
+                        className="btn"
+                        style={{
+                            background: '#0284c7',
+                            color: '#ffffff',
+                            fontWeight: '700',
+                            fontSize: '13px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '8px',
+                            padding: '10px 18px',
+                            borderRadius: '10px',
+                            boxShadow: '0 2px 8px rgba(2, 132, 199, 0.3)',
+                            border: 'none',
+                            cursor: students.length === 0 ? 'not-allowed' : 'pointer',
+                            opacity: students.length === 0 ? 0.5 : 1
+                        }}
+                        title="Download standard CSV spreadsheet"
+                    >
+                        <span>📑</span> Download in CSV
+                    </button>
                 </div>
             </div>
 

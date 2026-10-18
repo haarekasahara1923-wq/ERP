@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
     if (error) return error
 
     try {
-        const { search, course, courseId, batch, batchId, status } = Object.fromEntries(
+        const { search, searchBy, course, courseId, batch, batchId, status } = Object.fromEntries(
             new URL(req.url).searchParams.entries()
         )
 
@@ -18,13 +18,25 @@ export async function GET(req: NextRequest) {
         if (resolvedCourseId) where.courseId = resolvedCourseId
         if (resolvedBatchId) where.batchId = resolvedBatchId
         if (status) where.status = status
-        if (search) {
-            where.OR = [
-                { fullName: { contains: search, mode: 'insensitive' } },
-                { phone: { contains: search } },
-                { studentId: { contains: search, mode: 'insensitive' } },
-                { scholarNo: { contains: search, mode: 'insensitive' } },
-            ]
+        if (search && search.trim()) {
+            const query = search.trim()
+            if (searchBy === 'name') {
+                where.fullName = { contains: query, mode: 'insensitive' }
+            } else if (searchBy === 'scholarNo') {
+                where.OR = [
+                    { scholarNo: { contains: query, mode: 'insensitive' } },
+                    { studentId: { contains: query, mode: 'insensitive' } }
+                ]
+            } else if (searchBy === 'phone') {
+                where.phone = { contains: query }
+            } else {
+                where.OR = [
+                    { fullName: { contains: query, mode: 'insensitive' } },
+                    { phone: { contains: query } },
+                    { studentId: { contains: query, mode: 'insensitive' } },
+                    { scholarNo: { contains: query, mode: 'insensitive' } },
+                ]
+            }
         }
 
         const students = await prisma.student.findMany({
