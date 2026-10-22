@@ -44,20 +44,83 @@ export async function GET(req: NextRequest) {
             include: {
                 course: { select: { name: true, subjects: true } },
                 batch: { select: { name: true } },
-                parentLinks: { include: { user: { select: { email: true, plainPassword: true } } } },
+                parentLinks: { 
+                    include: { 
+                        user: { 
+                            select: { 
+                                id: true, 
+                                email: true, 
+                                phone: true, 
+                                plainPassword: true, 
+                                lastLogin: true 
+                            } 
+                        } 
+                    } 
+                },
                 examResults: { include: { exam: true } }
             },
             orderBy: { createdAt: 'desc' }
         })
 
-        const data = students.map(s => ({
-            ...s,
-            courseName: s.course.name,
-            courseSubjects: s.course.subjects || [],
-            batchName: s.batch.name,
-            parentEmail: s.parentLinks?.[0]?.user?.email || null,
-            parentPassword: s.parentLinks?.[0]?.user?.plainPassword || null,
-        }))
+        // Fetch parent users in this tenant to match by phone number
+        const parentUsers = await prisma.user.findMany({
+            where: {
+                tenantId: user!.tenantId,
+                role: 'PARENT',
+            },
+            select: {
+                id: true,
+                phone: true,
+                email: true,
+                plainPassword: true,
+                lastLogin: true,
+            }
+        })
+
+        const normalizePhone = (num?: string | null) => {
+            if (!num) return ''
+            return num.replace(/\D/g, '').slice(-10)
+        }
+
+        const parentUserByPhone = new Map<string, typeof parentUsers[0]>()
+        parentUsers.forEach(pu => {
+            const p1 = normalizePhone(pu.phone)
+            if (p1) parentUserByPhone.set(p1, pu)
+            const p2 = normalizePhone(pu.email)
+            if (p2) parentUserByPhone.set(p2, pu)
+        })
+
+        const data = students.map(s => {
+            const stuParentPhone = normalizePhone(s.parentPhone)
+            const stuPhone = normalizePhone(s.phone)
+            const matchedByPhone = (stuParentPhone ? parentUserByPhone.get(stuParentPhone) : null) || 
+                                   (stuPhone ? parentUserByPhone.get(stuPhone) : null)
+
+            // Check linked parent user(s)
+            const linkedUsers = s.parentLinks?.map((pl: any) => pl.user).filter(Boolean) || []
+            const activeLinkedUser = linkedUsers.find((u: any) => u.lastLogin) || linkedUsers[0]
+
+            // Determine effective parent user
+            const effectiveUser = (activeLinkedUser?.lastLogin 
+                ? activeLinkedUser 
+                : (matchedByPhone?.lastLogin ? matchedByPhone : (activeLinkedUser || matchedByPhone)))
+
+            const parentLoggedIn = Boolean(effectiveUser?.lastLogin)
+            const parentLastLogin = effectiveUser?.lastLogin ? new Date(effectiveUser.lastLogin).toISOString() : null
+
+            return {
+                ...s,
+                courseName: s.course.name,
+                courseSubjects: s.course.subjects || [],
+                batchName: s.batch.name,
+                parentEmail: effectiveUser?.email || s.parentLinks?.[0]?.user?.email || null,
+                parentPassword: effectiveUser?.plainPassword || s.parentLinks?.[0]?.user?.plainPassword || null,
+                parentLoggedIn,
+                parentLastLogin,
+                parentPortalStatus: parentLoggedIn ? 'LOGGED_IN' : 'NOT_LOGGED_IN',
+                parentAccountFound: Boolean(effectiveUser),
+            }
+        })
 
         // Total count for plan limit
         const totalCount = await prisma.student.count({ where: { tenantId: user!.tenantId } })

@@ -54,6 +54,11 @@ interface Student {
     address?: string
     motherName?: string
     hasSiblings?: boolean
+    // Parent Portal Login Status
+    parentLoggedIn?: boolean
+    parentLastLogin?: string | null
+    parentPortalStatus?: 'LOGGED_IN' | 'NOT_LOGGED_IN'
+    parentAccountFound?: boolean
 }
 
 interface SiblingStudent {
@@ -197,11 +202,12 @@ export default function StudentsPage() {
             return
         }
         const { label, filename } = getExportContext()
+        const parentLoggedInCount = students.filter(s => s.parentLoggedIn).length
         const rows: (string | number)[][] = [
             [`${(tenant?.name || 'UNIVERSAL DAY BOARDING ACADEMY').toUpperCase()} - STUDENT LIST`],
             [`Category / Filter: ${label}`],
             [`Generated On: ${new Date().toLocaleString('en-IN')}`],
-            [`Total Students: ${students.length}`],
+            [`Total Students: ${students.length}   |   Parent Logged In: ${parentLoggedInCount}   |   Parent Not Logged In: ${students.length - parentLoggedInCount}`],
             [''],
             [
                 'S.No.',
@@ -217,7 +223,9 @@ export default function StudentsPage() {
                 'Total Fee (INR)',
                 'Paid Fee (INR)',
                 'Due Fee (INR)',
-                'Status'
+                'Status',
+                'Parent Portal Status',
+                'Parent Last Login'
             ]
         ]
 
@@ -237,7 +245,9 @@ export default function StudentsPage() {
                 s.totalFee || 0,
                 s.paidFee || 0,
                 due,
-                s.status || 'ACTIVE'
+                s.status || 'ACTIVE',
+                s.parentLoggedIn ? 'LOGGED IN' : 'NOT LOGGED IN',
+                s.parentLastLogin ? new Date(s.parentLastLogin).toLocaleString('en-IN') : 'Never'
             ])
         })
 
@@ -253,6 +263,7 @@ export default function StudentsPage() {
         const totalFees = students.reduce((sum, s) => sum + (s.totalFee || 0), 0)
         const totalPaid = students.reduce((sum, s) => sum + (s.paidFee || 0), 0)
         const totalDue = Math.max(0, totalFees - totalPaid)
+        const parentLoggedInCount = students.filter(s => s.parentLoggedIn).length
 
         downloadExcel(filename, [
             {
@@ -260,7 +271,8 @@ export default function StudentsPage() {
                 headerLines: [
                     `Class / Filter: ${label}`,
                     `Generated On: ${new Date().toLocaleString('en-IN')}`,
-                    `Total Students Count: ${students.length}`
+                    `Total Students Count: ${students.length}`,
+                    `Parent Portal: ${parentLoggedInCount} Logged In | ${students.length - parentLoggedInCount} Not Logged In`
                 ],
                 headers: [
                     'S.No.',
@@ -276,7 +288,9 @@ export default function StudentsPage() {
                     'Total Fee (₹)',
                     'Paid Fee (₹)',
                     'Due Fee (₹)',
-                    'Status'
+                    'Status',
+                    'Parent Portal Status',
+                    'Parent Last Login'
                 ],
                 rows: students.map((s, idx) => [
                     idx + 1,
@@ -292,7 +306,9 @@ export default function StudentsPage() {
                     s.totalFee || 0,
                     s.paidFee || 0,
                     Math.max(0, (s.totalFee || 0) - (s.paidFee || 0)),
-                    s.status || 'ACTIVE'
+                    s.status || 'ACTIVE',
+                    s.parentLoggedIn ? 'LOGGED IN' : 'NOT LOGGED IN',
+                    s.parentLastLogin ? new Date(s.parentLastLogin).toLocaleString('en-IN') : 'Never'
                 ]),
                 footer: [
                     'Total',
@@ -308,6 +324,8 @@ export default function StudentsPage() {
                     totalFees,
                     totalPaid,
                     totalDue,
+                    '',
+                    `${parentLoggedInCount} Logged In`,
                     ''
                 ]
             }
@@ -324,6 +342,8 @@ export default function StudentsPage() {
         const totalPaid = students.reduce((sum, s) => sum + (s.paidFee || 0), 0)
         const totalDue = Math.max(0, totalFees - totalPaid)
         const activeCount = students.filter(s => s.status === 'ACTIVE').length
+        const parentLoggedInCount = students.filter(s => s.parentLoggedIn).length
+        const parentNotLoggedInCount = students.length - parentLoggedInCount
 
         generateAndPrintPDF({
             title: `Student Roster • ${label}`,
@@ -337,7 +357,9 @@ export default function StudentsPage() {
                 { label: 'Total Students', value: students.length, subtext: `${activeCount} Active`, color: '#6366f1' },
                 { label: 'Total Billed', value: `₹${totalFees.toLocaleString('en-IN')}`, subtext: 'Course Fees', color: '#10b981' },
                 { label: 'Total Collected', value: `₹${totalPaid.toLocaleString('en-IN')}`, subtext: 'Received Amount', color: '#10b981' },
-                { label: 'Pending Dues', value: `₹${totalDue.toLocaleString('en-IN')}`, subtext: 'Outstanding Fees', color: '#ef4444' }
+                { label: 'Pending Dues', value: `₹${totalDue.toLocaleString('en-IN')}`, subtext: 'Outstanding Fees', color: '#ef4444' },
+                { label: 'Parent Portal: Logged In', value: parentLoggedInCount, subtext: `${students.length ? Math.round((parentLoggedInCount/students.length)*100) : 0}% of parents`, color: '#10b981' },
+                { label: 'Parent Portal: Not Logged In', value: parentNotLoggedInCount, subtext: 'Need to register/login', color: '#f59e0b' }
             ],
             tables: [
                 {
@@ -353,7 +375,8 @@ export default function StudentsPage() {
                         'Total Fee',
                         'Paid Fee',
                         'Due Fee',
-                        'Status'
+                        'Status',
+                        'Parent Portal'
                     ],
                     rows: students.map((s, idx) => [
                         idx + 1,
@@ -366,11 +389,12 @@ export default function StudentsPage() {
                         `₹${(s.totalFee || 0).toLocaleString('en-IN')}`,
                         `₹${(s.paidFee || 0).toLocaleString('en-IN')}`,
                         `₹${Math.max(0, (s.totalFee || 0) - (s.paidFee || 0)).toLocaleString('en-IN')}`,
-                        s.status || 'ACTIVE'
+                        s.status || 'ACTIVE',
+                        s.parentLoggedIn ? '✅ Logged In' : '❌ Not Logged In'
                     ])
                 }
             ],
-            notes: `This is an official computer-generated student record for ${label}. Generated on ${new Date().toLocaleString('en-IN')}.`
+            notes: `This is an official computer-generated student record for ${label}. Parent Portal Active: ${parentLoggedInCount} parents logged in (${students.length ? Math.round((parentLoggedInCount/students.length)*100) : 0}%). Generated on ${new Date().toLocaleString('en-IN')}.`
         })
     }
 
@@ -859,16 +883,18 @@ export default function StudentsPage() {
             </div>
 
             {/* Stats */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '12px', marginBottom: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '12px', marginBottom: '20px' }}>
                 {[
                     { label: 'Total', value: students.length, color: '#6366f1' },
                     { label: 'Active', value: students.filter(s => s.status === 'ACTIVE').length, color: '#10b981' },
                     { label: 'Dropout', value: students.filter(s => s.status === 'DROPOUT').length, color: '#ef4444' },
                     { label: 'With Dues', value: students.filter(s => s.totalFee > s.paidFee).length, color: '#f59e0b' },
+                    { label: '✅ Parent Logged In', value: students.filter(s => s.parentLoggedIn).length, color: '#10b981' },
+                    { label: '❌ Parent Not Logged In', value: students.filter(s => !s.parentLoggedIn).length, color: '#ef4444' },
                 ].map(s => (
                     <div key={s.label} style={{ padding: '14px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px', textAlign: 'center' }}>
                         <div style={{ fontSize: '24px', fontWeight: '800', color: s.color }}>{s.value}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-muted)', marginTop: '4px' }}>{s.label}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-muted)', marginTop: '4px' }}>{s.label}</div>
                     </div>
                 ))}
             </div>
@@ -894,7 +920,7 @@ export default function StudentsPage() {
                                     <th>Student</th>
                                     <th>Class / Section</th>
                                     <th>Phone</th>
-                                    <th>Parent Login</th>
+                                    <th>Parent Portal</th>
                                     <th>Fee Status</th>
                                     <th>Status</th>
                                     <th>Admission</th>
@@ -934,14 +960,31 @@ export default function StudentsPage() {
                                                 {s.parentPhone && <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>P: {s.parentPhone}</div>}
                                             </td>
                                             <td>
-                                                {s.parentEmail ? (
-                                                    <div style={{ fontSize: '12px' }}>
-                                                        <div style={{ color: 'var(--text-primary)', fontWeight: '600' }}>{s.parentEmail}</div>
-                                                        <div style={{ color: 'var(--text-muted)' }}>Pass: {s.parentPassword || '***'}</div>
-                                                    </div>
-                                                ) : (
-                                                    <div style={{ fontSize: '11px', color: 'var(--text-muted)' }}>Not linked</div>
-                                                )}
+                                                <div>
+                                                    {/* Parent Portal Login Status Badge */}
+                                                    {s.parentLoggedIn ? (
+                                                        <div title={s.parentLastLogin ? `Last login: ${new Date(s.parentLastLogin).toLocaleString('en-IN')}` : 'Logged in'} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '20px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid rgba(16, 185, 129, 0.35)', color: '#10b981', fontSize: '12px', fontWeight: '700', marginBottom: '4px', cursor: 'default' }}>
+                                                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#10b981', flexShrink: 0, boxShadow: '0 0 0 2px rgba(16,185,129,0.3)' }} />
+                                                            Logged In
+                                                        </div>
+                                                    ) : (
+                                                        <div title={s.parentAccountFound ? 'Parent account exists but has never logged in' : 'No parent account found for this student'} style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '4px 10px', borderRadius: '20px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.35)', color: '#ef4444', fontSize: '12px', fontWeight: '700', marginBottom: '4px', cursor: 'default' }}>
+                                                            <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444', flexShrink: 0 }} />
+                                                            Not Logged In
+                                                        </div>
+                                                    )}
+                                                    {/* Parent Email / Phone below badge */}
+                                                    {s.parentEmail && (
+                                                        <div style={{ fontSize: '10px', color: 'var(--text-muted)', marginTop: '2px' }}>
+                                                            {s.parentEmail}
+                                                        </div>
+                                                    )}
+                                                    {s.parentLastLogin && (
+                                                        <div style={{ fontSize: '10px', color: '#10b981', marginTop: '1px' }}>
+                                                            {new Date(s.parentLastLogin).toLocaleDateString('en-IN')}
+                                                        </div>
+                                                    )}
+                                                </div>
                                             </td>
                                             <td>
                                                 <div style={{ marginBottom: '4px' }}>
