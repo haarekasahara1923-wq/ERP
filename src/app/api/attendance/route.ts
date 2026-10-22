@@ -8,27 +8,66 @@ export async function GET(req: NextRequest) {
     if (error) return error
 
     try {
-        const { batchId, date } = Object.fromEntries(new URL(req.url).searchParams.entries())
+        const { batchId, courseId, classId, studentId, date } = Object.fromEntries(new URL(req.url).searchParams.entries())
         
         const where: any = { tenantId: user!.tenantId }
-        if (batchId) where.batchId = batchId
+        const resolvedCourseId = courseId || classId
+        if (resolvedCourseId) {
+            where.student = { ...(where.student || {}), courseId: resolvedCourseId }
+        }
+        if (batchId) {
+            where.batchId = batchId
+        }
+        if (studentId) {
+            where.studentId = studentId
+        }
         if (date) {
-            const startDate = new Date(date)
-            startDate.setHours(0, 0, 0, 0)
-            const endDate = new Date(date)
-            endDate.setHours(23, 59, 59, 999)
+            const dateStr = date.split('T')[0]
+            const [y, m, d] = dateStr.split('-').map(Number)
+            const startDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0))
+            const endDate = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999))
             where.date = { gte: startDate, lte: endDate }
         }
 
         const attendances = await prisma.attendance.findMany({
             where,
-            include: { student: { select: { fullName: true } } },
-            orderBy: { createdAt: 'desc' }
+            include: { 
+                student: { 
+                    select: { 
+                        id: true,
+                        fullName: true,
+                        studentId: true,
+                        scholarNo: true,
+                        courseId: true,
+                        batchId: true,
+                        course: { select: { id: true, name: true } },
+                        batch: { select: { id: true, name: true } }
+                    } 
+                },
+                batch: { select: { id: true, name: true } }
+            },
+            orderBy: [{ date: 'desc' }, { createdAt: 'desc' }]
         })
 
-        const data = attendances.map(a => ({
+        // De-duplicate if multiple records exist for the same student on the same date (keep most recently updated)
+        const studentSeen = new Set<string>()
+        const uniqueAttendances: typeof attendances = []
+        for (const a of attendances) {
+            if (a.studentId) {
+                const key = `${a.studentId}_${new Date(a.date).toISOString().split('T')[0]}`
+                if (studentSeen.has(key)) continue
+                studentSeen.add(key)
+            }
+            uniqueAttendances.push(a)
+        }
+
+        const data = uniqueAttendances.map(a => ({
             ...a,
             studentName: a.student?.fullName || 'Unknown',
+            scholarNo: a.student?.scholarNo || a.student?.studentId || '',
+            studentCode: a.student?.studentId || '',
+            className: a.student?.course?.name || '',
+            batchName: a.batch?.name || a.student?.batch?.name || '',
         }))
 
         return NextResponse.json({ success: true, data })
@@ -46,25 +85,61 @@ export async function POST(req: NextRequest) {
         const body = await req.json()
         const records = body.records || [body]
 
-        if (!Array.isArray(records)) {
-            return NextResponse.json({ error: 'Invalid record format' }, { status: 400 })
+        if (!Array.isArray(records) || records.length === 0) {
+            return NextResponse.json({ error: 'Invalid record format or empty records' }, { status: 400 })
         }
 
-        const created = await prisma.$transaction(
-            records.map((r: any) => 
-                prisma.attendance.create({
+        // Determine target date from records
+        const firstDateStr = (records[0]?.date || new Date().toISOString()).split('T')[0]
+        const [y, m, d] = firstDateStr.split('-').map(Number)
+        const startDate = new Date(Date.UTC(y, m - 1, d, 0, 0, 0, 0))
+        const endDate = new Date(Date.UTC(y, m - 1, d, 23, 59, 59, 999))
+        const recordDate = new Date(Date.UTC(y, m - 1, d, 12, 0, 0, 0))
+
+        const studentIds = records.map((r: any) => r.studentId).filter(Boolean)
+        
+        // Find existing records for these students on this date to upsert
+        const existingRecords = await prisma.attendance.findMany({
+            where: {
+                tenantId: user!.tenantId,
+                studentId: { in: studentIds },
+                date: { gte: startDate, lte: endDate }
+            }
+        })
+        const existingMap = new Map<string, string>() // studentId -> attendance.id
+        existingRecords.forEach(er => {
+            if (er.studentId) existingMap.set(er.studentId, er.id)
+        })
+
+        const operations = records.map((r: any) => {
+            const existingId = existingMap.get(r.studentId)
+            if (existingId) {
+                return prisma.attendance.update({
+                    where: { id: existingId },
+                    data: {
+                        status: (r.status || 'PRESENT') as any,
+                        batchId: r.batchId || null,
+                        markedBy: user!.userId,
+                        notes: r.notes || '',
+                        updatedAt: new Date()
+                    }
+                })
+            } else {
+                return prisma.attendance.create({
                     data: {
                         tenantId: user!.tenantId,
                         studentId: r.studentId,
-                        batchId: r.batchId,
-                        date: new Date(r.date),
+                        batchId: r.batchId || null,
+                        date: recordDate,
                         status: (r.status || 'PRESENT') as any,
                         markedBy: user!.userId,
                         notes: r.notes || '',
                     }
                 })
-            )
-        )
+            }
+        })
+
+        const saved = await prisma.$transaction(operations)
 
         // Asynchronously notify parents
         for (const r of records) {
@@ -78,7 +153,7 @@ export async function POST(req: NextRequest) {
                         data: {
                             tenantId: user!.tenantId,
                             title: `Attendance Marked: ${student.fullName}`,
-                            message: `${student.fullName} has been marked ${r.status} on ${new Date(r.date).toLocaleDateString('en-IN')}.`,
+                            message: `${student.fullName} has been marked ${r.status} on ${recordDate.toLocaleDateString('en-IN')}.`,
                             type: 'ATTENDANCE',
                             targetRole: 'PARENT',
                             targetId: parent.userId,
@@ -99,10 +174,10 @@ export async function POST(req: NextRequest) {
             }
         }
 
-        return NextResponse.json({ success: true, data: created }, { status: 201 })
+        return NextResponse.json({ success: true, count: saved.length, data: saved }, { status: 201 })
     } catch (err) {
-        console.error('Create attendance error:', err)
-        return NextResponse.json({ error: 'Failed to create attendance' }, { status: 500 })
+        console.error('Create/update attendance error:', err)
+        return NextResponse.json({ error: 'Failed to record attendance' }, { status: 500 })
     }
 }
 

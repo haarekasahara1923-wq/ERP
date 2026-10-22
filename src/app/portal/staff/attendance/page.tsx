@@ -1,4 +1,4 @@
-﻿'use client'
+'use client'
 import { useAuth } from '@/contexts/AuthContext'
 import { useState, useEffect } from 'react'
 
@@ -24,27 +24,49 @@ export default function StaffAttendance() {
   }, [token])
 
   useEffect(() => {
-    if (!selectedBatch || !token) {
+    if (!selectedCourse || !token) {
         setStudents([])
         return
     }
     setLoading(true)
-    fetch(`/api/students?batchId=${selectedBatch}`, { headers: h })
-      .then(r => r.json())
-      .then(d => {
-        const stu = d.data || []
-        setStudents(stu)
-        const init: Record<string, string> = {}
-        stu.forEach((s: any) => { init[s.id] = 'PRESENT' })
-        setAttendance(init)
-        setLoading(false)
-      })
-  }, [selectedBatch, token])
+    const stuUrl = selectedBatch 
+      ? `/api/students?batchId=${selectedBatch}&courseId=${selectedCourse}`
+      : `/api/students?courseId=${selectedCourse}`
+    
+    const attUrl = selectedBatch
+      ? `/api/attendance?batchId=${selectedBatch}&date=${date}`
+      : `/api/attendance?courseId=${selectedCourse}&date=${date}`
+
+    Promise.all([
+      fetch(stuUrl, { headers: h }).then(r => r.json()),
+      fetch(attUrl, { headers: h }).then(r => r.json())
+    ]).then(([stuData, attData]) => {
+      const stu = stuData.data || []
+      setStudents(stu)
+      const init: Record<string, string> = {}
+      stu.forEach((s: any) => { init[s.id] = 'PRESENT' })
+      if (attData.success && Array.isArray(attData.data)) {
+        attData.data.forEach((a: any) => {
+          if (a.studentId) init[a.studentId] = a.status
+        })
+      }
+      setAttendance(init)
+      setLoading(false)
+    }).catch(err => {
+      console.error(err)
+      setLoading(false)
+    })
+  }, [selectedCourse, selectedBatch, date, token])
 
   const save = async () => {
     setSaving(true)
     setMsg('')
-    const records = students.map(s => ({ studentId: s.id, batchId: selectedBatch, date, status: attendance[s.id] || 'PRESENT' }))
+    const records = students.map(s => ({ 
+      studentId: s.id, 
+      batchId: selectedBatch || s.batchId || null, 
+      date, 
+      status: attendance[s.id] || 'PRESENT' 
+    }))
     const res = await fetch('/api/attendance', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...h },
@@ -53,9 +75,9 @@ export default function StaffAttendance() {
     const d = await res.json()
     setSaving(false)
     if (d.success) {
-      setMsg('? Attendance saved and parents notified!')
+      setMsg('✅ Attendance published and parents notified successfully!')
     } else {
-      setMsg(d.error || 'Failed to save')
+      setMsg(d.error || 'Failed to save attendance')
     }
   }
 
@@ -65,7 +87,7 @@ export default function StaffAttendance() {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      <h1 style={{ fontSize: '18px', fontWeight: '800', color: 'white', margin: 0 }}>? Mark Daily Attendance</h1>
+      <h1 style={{ fontSize: '18px', fontWeight: '800', color: 'white', margin: 0 }}>✅ Mark Daily Attendance</h1>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
         <div>
@@ -74,28 +96,28 @@ export default function StaffAttendance() {
         </div>
         <div style={{ display: 'flex', gap: '12px' }}>
           <div style={{ flex: 1 }}>
-            <label style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px', display: 'block' }}>Class</label>
+            <label style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px', display: 'block' }}>Class *</label>
             <select value={selectedCourse} onChange={e => { setSelectedCourse(e.target.value); setSelectedBatch(''); }} style={inputStyle}>
               <option value="">-- Select Class --</option>
               {courses.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
             </select>
           </div>
           <div style={{ flex: 1 }}>
-            <label style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px', display: 'block' }}>Section</label>
+            <label style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '6px', display: 'block' }}>Section / Batch (Optional)</label>
             <select value={selectedBatch} onChange={e => setSelectedBatch(e.target.value)} disabled={!selectedCourse} style={{...inputStyle, opacity: !selectedCourse ? 0.5 : 1}}>
-              <option value="">-- Select Section --</option>
+              <option value="">-- All Sections / Batches --</option>
               {batches.filter(b => b.courseId === selectedCourse).map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
         </div>
       </div>
 
-      {msg && <div style={{ background: msg.startsWith('?') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${msg.startsWith('?') ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: '10px', padding: '12px', fontSize: '13px', color: msg.startsWith('?') ? '#10b981' : '#ef4444' }}>{msg}</div>}
+      {msg && <div style={{ background: msg.startsWith('✅') ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)', border: `1px solid ${msg.startsWith('✅') ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`, borderRadius: '10px', padding: '12px', fontSize: '13px', color: msg.startsWith('✅') ? '#10b981' : '#ef4444' }}>{msg}</div>}
 
-      {loading && <div style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>Loading students...</div>}
+      {loading && <div style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>Loading students & attendance...</div>}
 
-      {!loading && selectedBatch && students.length === 0 && (
-         <div style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>No students found in this batch.</div>
+      {!loading && selectedCourse && students.length === 0 && (
+         <div style={{ color: '#64748b', textAlign: 'center', padding: '20px' }}>No students found in this class.</div>
       )}
 
       {students.length > 0 && (
@@ -125,7 +147,7 @@ export default function StaffAttendance() {
           ))}
           <button onClick={save} disabled={saving}
             style={{ background: 'linear-gradient(135deg, #10b981, #059669)', border: 'none', borderRadius: '12px', padding: '14px', color: 'white', fontWeight: '700', fontSize: '15px', cursor: 'pointer', opacity: saving ? 0.6 : 1, marginTop: '8px' }}>
-            {saving ? 'Publishing...' : '?? Publish Attendance'}
+            {saving ? 'Publishing...' : '📢 Publish Attendance'}
           </button>
         </>
       )}
