@@ -62,19 +62,16 @@ export async function GET(req: NextRequest) {
             orderBy: { createdAt: 'desc' }
         })
 
-        // Fetch parent users in this tenant to match by phone number
+        // -- Parent Portal Detection (3-condition logic) ----------------------------
+        // GREEN (parentLoggedIn=true) if ANY of these is satisfied:
+        //   [1] Student has parentLinks (a parent explicitly linked this child in their portal)
+        //   [2] student.parentPhone matches a PARENT user's phone number
+        //   [3] student.parentPhone or student.email matches a PARENT user's email
+
+        // Fetch all PARENT role users in this tenant
         const parentUsers = await prisma.user.findMany({
-            where: {
-                tenantId: user!.tenantId,
-                role: 'PARENT',
-            },
-            select: {
-                id: true,
-                phone: true,
-                email: true,
-                plainPassword: true,
-                lastLogin: true,
-            }
+            where: { tenantId: user!.tenantId, role: 'PARENT' },
+            select: { id: true, phone: true, email: true, plainPassword: true, lastLogin: true }
         })
 
         const normalizePhone = (num?: string | null) => {
@@ -82,31 +79,52 @@ export async function GET(req: NextRequest) {
             return num.replace(/\D/g, '').slice(-10)
         }
 
-        const parentUserByPhone = new Map<string, typeof parentUsers[0]>()
+        // Build lookup maps: normalised phone and lowercase email
+        const parentByPhone = new Map<string, typeof parentUsers[0]>()
+        const parentByEmail = new Map<string, typeof parentUsers[0]>()
         parentUsers.forEach(pu => {
-            const p1 = normalizePhone(pu.phone)
-            if (p1) parentUserByPhone.set(p1, pu)
-            const p2 = normalizePhone(pu.email)
-            if (p2) parentUserByPhone.set(p2, pu)
+            const ph = normalizePhone(pu.phone)
+            if (ph) parentByPhone.set(ph, pu)
+            if (pu.email) parentByEmail.set(pu.email.toLowerCase().trim(), pu)
         })
 
         const data = students.map(s => {
-            const stuParentPhone = normalizePhone(s.parentPhone)
-            const stuPhone = normalizePhone(s.phone)
-            const matchedByPhone = (stuParentPhone ? parentUserByPhone.get(stuParentPhone) : null) || 
-                                   (stuPhone ? parentUserByPhone.get(stuPhone) : null)
+            // CONDITION 1: Direct parent-link exists (parent added this child in portal)
+            const linkedParentProfiles = s.parentLinks || []
+            const hasDirectLink = linkedParentProfiles.length > 0
+            const linkedUsers = linkedParentProfiles.map((pl: any) => pl.user).filter(Boolean)
+            const bestLinkedUser = linkedUsers.find((u: any) => u.lastLogin) || linkedUsers[0] || null
 
-            // Check linked parent user(s)
-            const linkedUsers = s.parentLinks?.map((pl: any) => pl.user).filter(Boolean) || []
-            const activeLinkedUser = linkedUsers.find((u: any) => u.lastLogin) || linkedUsers[0]
+            // CONDITION 2: parentPhone matches a PARENT user's phone
+            const normParentPhone = normalizePhone(s.parentPhone)
+            const normStudentPhone = normalizePhone(s.phone)
+            const matchedByPhone =
+                (normParentPhone ? parentByPhone.get(normParentPhone) : null) ||
+                (normStudentPhone ? parentByPhone.get(normStudentPhone) : null) ||
+                null
 
-            // Determine effective parent user
-            const effectiveUser = (activeLinkedUser?.lastLogin 
-                ? activeLinkedUser 
-                : (matchedByPhone?.lastLogin ? matchedByPhone : (activeLinkedUser || matchedByPhone)))
+            // CONDITION 3: parentPhone or student email matches a PARENT user's email
+            const parentPhoneStr = s.parentPhone?.toLowerCase().trim() || ''
+            const studentEmailStr = s.email?.toLowerCase().trim() || ''
+            const matchedByEmail =
+                (parentPhoneStr ? parentByEmail.get(parentPhoneStr) : null) ||
+                (studentEmailStr ? parentByEmail.get(studentEmailStr) : null) ||
+                null
 
-            const parentLoggedIn = Boolean(effectiveUser?.lastLogin)
-            const parentLastLogin = effectiveUser?.lastLogin ? new Date(effectiveUser.lastLogin).toISOString() : null
+            // GREEN if ANY condition is satisfied
+            const parentLinked = hasDirectLink || Boolean(matchedByPhone) || Boolean(matchedByEmail)
+
+            // Best user to pull lastLogin / credentials from
+            const candidates = [bestLinkedUser, matchedByPhone, matchedByEmail].filter(Boolean)
+            const effectiveUser =
+                candidates.find((u: any) => u?.lastLogin) ||
+                candidates[0] ||
+                null
+
+            const parentLoggedIn = parentLinked
+            const parentLastLogin = effectiveUser?.lastLogin
+                ? new Date(effectiveUser.lastLogin).toISOString()
+                : null
 
             return {
                 ...s,
@@ -119,6 +137,7 @@ export async function GET(req: NextRequest) {
                 parentLastLogin,
                 parentPortalStatus: parentLoggedIn ? 'LOGGED_IN' : 'NOT_LOGGED_IN',
                 parentAccountFound: Boolean(effectiveUser),
+                _parentLinkSource: hasDirectLink ? 'DIRECT_LINK' : matchedByPhone ? 'PHONE_MATCH' : matchedByEmail ? 'EMAIL_MATCH' : 'NONE'
             }
         })
 
