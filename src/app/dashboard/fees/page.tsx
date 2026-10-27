@@ -12,6 +12,7 @@ interface Student {
     courseName: string
     totalFee: number
     paidFee: number
+    previousDueFee?: number
     status: string
     scholarNo?: string
     hasSiblings?: boolean
@@ -263,65 +264,118 @@ export default function FeesPage() {
         })
     }
 
-    const renderFeeSlots = (fees: any[], forSibling = false, sibObj?: SiblingInfo) => (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
-            {[0, 1, 2, 3, 4, 5].map(idx => {
-                const fee = fees[idx]
-                return (
-                    <div key={idx} style={{ padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }}>
-                        <div style={{ fontSize: '12px', fontWeight: '700', marginBottom: '8px', color: 'var(--text-secondary)' }}>Slot {idx + 1}</div>
-                        <div style={{ position: 'relative' }}>
-                            <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'var(--text-muted)' }}>₹</span>
-                            <input
-                                type="number"
-                                className="input"
-                                style={{ paddingLeft: '24px', fontWeight: '700' }}
-                                placeholder="0.00"
-                                defaultValue={fee?.amount || 0}
-                                onBlur={async (e) => {
-                                    const val = parseFloat(e.target.value) || 0
-                                    if (fee && val === fee.amount) return
-                                    if (!fee) { alert('Please generate slots first!'); return }
+    const renderFeeSlots = (fees: any[], forSibling = false, sibObj?: SiblingInfo) => {
+        const prevDueFees = fees.filter(f => f.notes && f.notes.includes('Previous Year Due'))
+        const regularFees = fees.filter(f => !f.notes || !f.notes.includes('Previous Year Due'))
 
-                                    setFeesLoading(true)
-                                    try {
-                                        const res = await fetch('/api/fees', {
-                                            method: 'PATCH',
-                                            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                                            body: JSON.stringify({ id: fee.id, amount: val, mode: paymentMode })
-                                        })
-                                        const data = await res.json()
-                                        if (data.success) {
-                                            const resStudents = await fetch('/api/students', { headers: { Authorization: `Bearer ${token}` } })
-                                            const dataStudents = await resStudents.json()
-                                            if (dataStudents.success) {
-                                                setStudents(dataStudents.data)
-                                                if (!forSibling) {
-                                                    const updatedStu = dataStudents.data.find((s: any) => s.id === selectedStudentForFees!.id)
-                                                    if (updatedStu) setSelectedStudentForFees(updatedStu)
-                                                }
-                                            }
-                                            const studentId = forSibling ? sibObj!.id : selectedStudentForFees!.id
-                                            const resFees = await fetch(`/api/fees?studentId=${studentId}`, { headers: { Authorization: `Bearer ${token}` } })
-                                            const dataFees = await resFees.json()
-                                            if (dataFees.success) {
-                                                if (forSibling) setSiblingFees(dataFees.data)
-                                                else setStudentFees(dataFees.data)
-                                            }
+        const updateSlot = async (fee: any, val: number, idx: number, isPrevDue: boolean) => {
+            if (fee && val === fee.amount) return
+            if (!fee) { alert('Please generate slots first!'); return }
+            setFeesLoading(true)
+            try {
+                const res = await fetch('/api/fees', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ id: fee.id, amount: val, mode: paymentMode })
+                })
+                const data = await res.json()
+                if (data.success) {
+                    const resStudents = await fetch('/api/students', { headers: { Authorization: `Bearer ${token}` } })
+                    const dataStudents = await resStudents.json()
+                    if (dataStudents.success) {
+                        setStudents(dataStudents.data)
+                        if (!forSibling) {
+                            const updatedStu = dataStudents.data.find((s: any) => s.id === selectedStudentForFees!.id)
+                            if (updatedStu) setSelectedStudentForFees(updatedStu)
+                        }
+                    }
+                    const studentId = forSibling ? sibObj!.id : selectedStudentForFees!.id
+                    const resFees = await fetch(`/api/fees?studentId=${studentId}`, { headers: { Authorization: `Bearer ${token}` } })
+                    const dataFees = await resFees.json()
+                    if (dataFees.success) {
+                        if (forSibling) setSiblingFees(dataFees.data)
+                        else setStudentFees(dataFees.data)
+                    }
+                    setToast(`${isPrevDue ? 'Previous year due' : `Slot ${idx + 1}`} updated!`)
+                    setTimeout(() => setToast(''), 3000)
+                }
+            } catch (err) { alert('Update failed') }
+            setFeesLoading(false)
+        }
 
-                                            setToast(`Slot ${idx + 1} updated!`)
-                                            setTimeout(() => setToast(''), 3000)
-                                        }
-                                    } catch (err) { alert('Update failed') }
-                                    setFeesLoading(false)
-                                }}
-                            />
+        return (
+            <div>
+                {prevDueFees.length > 0 && (
+                    <div style={{ marginBottom: '14px' }}>
+                        <div style={{ fontSize: '11px', fontWeight: '800', color: '#f59e0b', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid rgba(245,158,11,0.25)' }}>
+                            ⏮️ Previous Year Dues
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                            {prevDueFees.map((fee, i) => (
+                                <div key={fee.id} style={{ padding: '12px', background: 'rgba(245,158,11,0.07)', border: '1px solid rgba(245,158,11,0.4)', borderRadius: '12px' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                        <div style={{ fontSize: '12px', fontWeight: '700', color: '#f59e0b' }}>⏮️ Prev. Year Due</div>
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: fee.paidDate ? '#10b981' : '#ef4444', padding: '2px 8px', background: fee.paidDate ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '20px' }}>
+                                            {fee.paidDate ? '✅ Paid' : '⏳ Pending'}
+                                        </div>
+                                    </div>
+                                    <div style={{ position: 'relative' }}>
+                                        <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'var(--text-muted)' }}>₹</span>
+                                        <input type="number" className="input" style={{ paddingLeft: '24px', fontWeight: '700', borderColor: 'rgba(245,158,11,0.5)' }}
+                                            placeholder="0.00" defaultValue={fee?.amount || 0} disabled={fee?.paidDate != null}
+                                            onBlur={async e => updateSlot(fee, parseFloat(e.target.value) || 0, i, true)}
+                                        />
+                                    </div>
+                                    {fee && !fee.paidDate && fee.amount > 0 && (
+                                        <button className="btn btn-sm" style={{ marginTop: '8px', width: '100%', fontSize: '11px', padding: '5px', background: 'linear-gradient(135deg,#f59e0b,#d97706)', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '700' }}
+                                            disabled={processingPayment === fee.id} onClick={() => handlePayInstallment(fee, forSibling)}>
+                                            {processingPayment === fee.id ? '⏳...' : '💳 Pay Previous Due'}
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
                         </div>
                     </div>
-                )
-            })}
-        </div>
-    )
+                )}
+                {prevDueFees.length > 0 && (
+                    <div style={{ fontSize: '11px', fontWeight: '800', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid var(--border)' }}>
+                        📅 Current Year Installments
+                    </div>
+                )}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px' }}>
+                    {[0, 1, 2, 3, 4, 5].map(idx => {
+                        const fee = regularFees[idx]
+                        return (
+                            <div key={idx} style={{ padding: '12px', background: 'var(--surface)', border: '1px solid var(--border)', borderRadius: '12px' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                                    <div style={{ fontSize: '12px', fontWeight: '700', color: 'var(--text-secondary)' }}>Slot {idx + 1}</div>
+                                    {fee && (
+                                        <div style={{ fontSize: '11px', fontWeight: '700', color: fee.paidDate ? '#10b981' : '#ef4444', padding: '2px 8px', background: fee.paidDate ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)', borderRadius: '20px' }}>
+                                            {fee.paidDate ? '✅ Paid' : '⏳ Pending'}
+                                        </div>
+                                    )}
+                                </div>
+                                <div style={{ position: 'relative' }}>
+                                    <span style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', fontSize: '13px', color: 'var(--text-muted)' }}>₹</span>
+                                    <input type="number" className="input" style={{ paddingLeft: '24px', fontWeight: '700' }}
+                                        placeholder="0.00" defaultValue={fee?.amount || 0} disabled={fee?.paidDate != null}
+                                        onBlur={async e => updateSlot(fee, parseFloat(e.target.value) || 0, idx, false)}
+                                    />
+                                </div>
+                                {fee && !fee.paidDate && fee.amount > 0 && (
+                                    <button className="btn btn-primary btn-sm" style={{ marginTop: '8px', width: '100%', fontSize: '11px', padding: '5px' }}
+                                        disabled={processingPayment === fee.id} onClick={() => handlePayInstallment(fee, forSibling)}>
+                                        {processingPayment === fee.id ? '⏳...' : `💳 Pay Slot ${idx + 1}`}
+                                    </button>
+                                )}
+                            </div>
+                        )
+                    })}
+                </div>
+            </div>
+        )
+    }
+
 
     return (
         <div>
@@ -415,6 +469,9 @@ export default function FeesPage() {
                                                             {s.fullName}
                                                             {s.hasSiblings && (
                                                                 <span title="Has siblings linked" style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '18px', height: '18px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: 'white', fontSize: '11px', fontWeight: '800' }}>+</span>
+                                                            )}
+                                                            {(s.previousDueFee || 0) > 0 && (
+                                                                <span title={`Previous Year Due: ${formatCurrency(s.previousDueFee || 0)}`} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', padding: '1px 6px', borderRadius: '10px', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', fontSize: '10px', fontWeight: '800', border: '1px solid rgba(245,158,11,0.3)' }}>⏮️ Prev Due</span>
                                                             )}
                                                         </div>
                                                         <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{s.scholarNo ? `#${s.scholarNo}` : s.phone}</div>
@@ -549,6 +606,30 @@ export default function FeesPage() {
                                                 <option value="CARD">💳 Card</option>
                                             </select>
                                         </div>
+
+                                        {/* Previous Due Fee Banner (if any) */}
+                                        {(selectedStudentForFees.previousDueFee || 0) > 0 && (
+                                            <div style={{ padding: '12px 14px', background: 'linear-gradient(135deg, rgba(245,158,11,0.12), rgba(245,158,11,0.06))', borderRadius: '12px', border: '1px solid rgba(245,158,11,0.4)', marginBottom: '12px' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                                                    <span style={{ fontSize: '16px' }}>⏮️</span>
+                                                    <div style={{ fontWeight: '800', fontSize: '13px', color: '#f59e0b' }}>Previous Year Due Fee (पिछले वर्ष की बकाया)</div>
+                                                </div>
+                                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '10px' }}>
+                                                    <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(245,158,11,0.1)', borderRadius: '8px' }}>
+                                                        <div style={{ fontSize: '10px', color: '#f59e0b', fontWeight: '700', textTransform: 'uppercase' }}>Previous Year Due</div>
+                                                        <div style={{ fontSize: '16px', fontWeight: '800', color: '#f59e0b' }}>{formatCurrency(selectedStudentForFees.previousDueFee || 0)}</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(99,102,241,0.1)', borderRadius: '8px' }}>
+                                                        <div style={{ fontSize: '10px', color: 'var(--primary)', fontWeight: '700', textTransform: 'uppercase' }}>Current Year</div>
+                                                        <div style={{ fontSize: '16px', fontWeight: '800', color: 'var(--primary)' }}>{formatCurrency(Math.max(0, selectedStudentForFees.totalFee - (selectedStudentForFees.previousDueFee || 0)))}</div>
+                                                    </div>
+                                                    <div style={{ textAlign: 'center', padding: '8px', background: 'rgba(16,185,129,0.1)', borderRadius: '8px' }}>
+                                                        <div style={{ fontSize: '10px', color: '#10b981', fontWeight: '700', textTransform: 'uppercase' }}>Total Combined</div>
+                                                        <div style={{ fontSize: '16px', fontWeight: '800', color: '#10b981' }}>{formatCurrency(selectedStudentForFees.totalFee)}</div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
 
                                         {studentFees.length === 0 ? (
                                             <div style={{ padding: '24px', textAlign: 'center' }}>

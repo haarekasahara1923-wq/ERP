@@ -337,6 +337,7 @@ model Student {
   samagraId           String?
   admissionDate       DateTime      @default(now())
   feePlan             String?
+  previousDueFee      Float         @default(0) // Previous year carried-forward dues
   totalFee            Float         @default(0)
   paidFee             Float         @default(0)
   status              StudentStatus @default(ACTIVE)

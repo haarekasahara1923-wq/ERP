@@ -235,6 +235,7 @@ export async function GET(req: NextRequest) {
         courseId: student.courseId,
         batchId: student.batchId,
         totalFee: student.totalFee,
+        previousDueFee: student.previousDueFee || 0,
         totalPaid,
         outstanding,
         status: outstanding <= 0 ? 'CLEAR' : outstanding < student.totalFee ? 'PARTIAL' : 'PENDING',

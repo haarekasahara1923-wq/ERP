@@ -72,10 +72,10 @@ export default function FeeLedgerPage() {
       ['Generated on:', new Date().toLocaleDateString('en-IN')],
       [],
       ['Sr#', 'Student ID', 'Name', 'Father Name', 'Class', 'Section', 'Phone', 'Parent Phone',
-       'Total Fee', 'Total Paid', 'Outstanding', 'Status', 'Has Siblings'],
+       'Prev Due Fee', 'Total Fee', 'Total Paid', 'Outstanding', 'Status', 'Has Siblings'],
       ...students.map((s, i) => [
         i + 1, s.studentId, s.fullName, s.fatherName, s.class, s.section,
-        s.phone, s.parentPhone, s.totalFee, s.totalPaid, s.outstanding, s.status,
+        s.phone, s.parentPhone, s.previousDueFee || 0, s.totalFee, s.totalPaid, s.outstanding, s.status,
         s.hasSiblings ? 'YES' : 'NO',
       ]),
     ]
@@ -399,6 +399,11 @@ function StudentLedgerCard({ student, expanded, onToggle, onPrintStudent, onSibl
             <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', fontWeight: '700', background: `${STATUS_COLOR[student.status]}20`, color: STATUS_COLOR[student.status], border: `1px solid ${STATUS_COLOR[student.status]}40` }}>
               {student.status}
             </span>
+            {(student.previousDueFee || 0) > 0 && (
+              <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', fontWeight: '700', background: 'rgba(245,158,11,0.15)', color: '#f59e0b', border: '1px solid rgba(245,158,11,0.3)' }} title={`Previous Year Due: ${fmt(student.previousDueFee)}`}>
+                ⏮️ Prev Due: {fmt(student.previousDueFee)}
+              </span>
+            )}
           </div>
           <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
             {student.class} • {student.section} &nbsp;|&nbsp; 📱 {student.phone}

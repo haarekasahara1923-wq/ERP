@@ -82,7 +82,7 @@ export default function AddStudentPage() {
         courseId: '', batchId: '',
         admissionDate: new Date().toISOString().split('T')[0],
         firstAdmissionClass: '', firstAdmissionDate: '', scholarshipScheme: '',
-        feePlan: 'Annual', totalFee: '', feeWaiver: '', notes: '',
+        feePlan: 'Annual', totalFee: '', feeWaiver: '', previousDueFee: '', notes: '',
         aadhaarNo: '', penId: '', aparId: '', samagraId: '',
         bankName: '', bankAccountNo: '', ifsc: '', subjectGroup: '', photo: ''
     })
@@ -439,7 +439,9 @@ export default function AddStudentPage() {
                                 let waiver = parseFloat(form.feeWaiver) || 0
                                 let newFeeWaiver = form.feeWaiver
                                 if (form.scholarshipScheme.toUpperCase() === 'RT') { waiver = classFee; newFeeWaiver = classFee.toString() }
-                                setForm({ ...form, courseId, batchId: '', feeWaiver: newFeeWaiver, totalFee: sel ? Math.max(0, classFee - waiver).toString() : '' })
+                                const baseFee = sel ? Math.max(0, classFee - waiver) : 0
+                                const prevDue = parseFloat(form.previousDueFee) || 0
+                                setForm({ ...form, courseId, batchId: '', feeWaiver: newFeeWaiver, totalFee: (baseFee + prevDue).toString() })
                             }} required disabled={metadataLoading}>
                                 <option value="">{metadataLoading ? 'Loading classes...' : 'Select Class'}</option>
                                 {courses.map((c: any) => <option key={c.id} value={c.id}>{c.name} ({c.installmentCount} Installments)</option>)}
@@ -468,8 +470,10 @@ export default function AddStudentPage() {
                         <Field label="Fee Waiver (Rs.)"><input className="input" type="number" placeholder="0" value={form.feeWaiver} onChange={e => {
                             const waiverStr = e.target.value; const waiver = parseFloat(waiverStr) || 0
                             const sel = courses.find((c: any) => c.id === form.courseId)
-                            const classFee = sel ? (sel as any).fees : (parseFloat(form.totalFee) + (parseFloat(form.feeWaiver) || 0))
-                            setForm({ ...form, feeWaiver: waiverStr, totalFee: sel ? Math.max(0, classFee - waiver).toString() : form.totalFee })
+                            const classFee = sel ? (sel as any).fees : (parseFloat(form.totalFee) - (parseFloat(form.previousDueFee) || 0) + (parseFloat(form.feeWaiver) || 0))
+                            const baseFee = sel ? Math.max(0, classFee - waiver) : Math.max(0, classFee - waiver)
+                            const prevDue = parseFloat(form.previousDueFee) || 0
+                            setForm({ ...form, feeWaiver: waiverStr, totalFee: sel ? (baseFee + prevDue).toString() : form.totalFee })
                         }} /></Field>
                         <Field label="Subject Group">
                             {(() => {
@@ -481,7 +485,39 @@ export default function AddStudentPage() {
                                 </select>)
                             })()}
                         </Field>
-                        <Field label="Total Course Fee (Rs.) [After Waiver]"><input className="input" type="number" placeholder="45000" value={form.totalFee} onChange={e => setForm({ ...form, totalFee: e.target.value })} /></Field>
+                        <Field label="Previous Year Due Fee (Rs.)"> 
+                            <div style={{ position: 'relative' }}>
+                                <input 
+                                    className="input" 
+                                    type="number" 
+                                    placeholder="0 (Enter if student has previous year outstanding)" 
+                                    value={form.previousDueFee} 
+                                    onChange={e => {
+                                        const prevDueStr = e.target.value
+                                        const prevDue = parseFloat(prevDueStr) || 0
+                                        const sel = courses.find((c: any) => c.id === form.courseId)
+                                        const classFee = sel ? (sel as any).fees : 0
+                                        const waiver = parseFloat(form.feeWaiver) || 0
+                                        const baseFee = sel ? Math.max(0, classFee - waiver) : (parseFloat(form.totalFee) - (parseFloat(form.previousDueFee) || 0))
+                                        setForm({ ...form, previousDueFee: prevDueStr, totalFee: (baseFee + prevDue).toString() })
+                                    }} 
+                                    style={{ borderColor: (parseFloat(form.previousDueFee) || 0) > 0 ? '#f59e0b' : undefined, background: (parseFloat(form.previousDueFee) || 0) > 0 ? 'rgba(245,158,11,0.05)' : undefined }}
+                                />
+                            </div>
+                            {(parseFloat(form.previousDueFee) || 0) > 0 && (
+                                <div style={{ marginTop: '6px', fontSize: '12px', color: '#f59e0b', fontWeight: '600', padding: '6px 10px', background: 'rgba(245,158,11,0.1)', borderRadius: '6px', border: '1px solid rgba(245,158,11,0.3)' }}>
+                                    ⚠️ Previous Year Due: ₹{(parseFloat(form.previousDueFee) || 0).toLocaleString('en-IN')} will be added to total fee
+                                </div>
+                            )}
+                        </Field>
+                        <Field label="Total Course Fee (Rs.) [After Waiver + Previous Due]">
+                            <input className="input" type="number" placeholder="45000" value={form.totalFee} onChange={e => setForm({ ...form, totalFee: e.target.value })} />
+                            {(parseFloat(form.previousDueFee) || 0) > 0 && (
+                                <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--text-muted)', padding: '6px 10px', background: 'var(--surface-2)', borderRadius: '6px' }}>
+                                    📊 Breakdown: Current Year ₹{Math.max(0, (parseFloat(form.totalFee) || 0) - (parseFloat(form.previousDueFee) || 0)).toLocaleString('en-IN')} + Previous Due ₹{(parseFloat(form.previousDueFee) || 0).toLocaleString('en-IN')}
+                                </div>
+                            )}
+                        </Field>
                     </div>
                 </div>
 

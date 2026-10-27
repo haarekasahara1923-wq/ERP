@@ -183,7 +183,7 @@ export async function POST(req: NextRequest) {
         const body = await req.json()
         const { 
             fullName, phone, courseId, batchId, fatherName, motherName, parentPhone, email, address, gender, dob, 
-            admissionDate, feePlan, totalFee, notes, aadhaarNo, penId, aparId, samagraId,
+            admissionDate, feePlan, totalFee, previousDueFee, notes, aadhaarNo, penId, aparId, samagraId,
             scholarNo, caste, dobInWords, medium, firstAdmissionClass, firstAdmissionDate, scholarshipScheme, 
             bankName, bankAccountNo, ifsc, subjectGroup, photo
         } = body
@@ -262,6 +262,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Course not found' }, { status: 404 })
         }
 
+        // Calculate previous due fee
+        const prevDue = parseFloat(previousDueFee) || 0
+        // Total fee = if provided by admin form, use it directly (it includes base fee + prevDue); otherwise course.fees + prevDue
+        const finalTotalFee = (totalFee !== undefined && totalFee !== '') 
+            ? (parseFloat(totalFee) || 0) 
+            : ((course.fees || 0) + prevDue)
+
         const student = await prisma.student.create({
             data: {
                 tenantId: user!.tenantId,
@@ -279,7 +286,8 @@ export async function POST(req: NextRequest) {
                 dob: dob ? new Date(dob) : null,
                 admissionDate: admissionDate ? new Date(admissionDate) : new Date(),
                 feePlan: feePlan || '',
-                totalFee: parseFloat(totalFee) || course.fees || 0,
+                previousDueFee: prevDue,
+                totalFee: finalTotalFee,
                 paidFee: 0,
                 status: 'ACTIVE',
                 notes: notes || '',
@@ -302,9 +310,23 @@ export async function POST(req: NextRequest) {
             }
         })
 
-        // Create 6 Fee installments (blank slots as requested by user)
         const admDate = admissionDate ? new Date(admissionDate) : new Date()
 
+        // If there's a previous due fee, create a dedicated fee slot for it (Slot 0 / Previous Year Due)
+        if (prevDue > 0) {
+            await prisma.fee.create({
+                data: {
+                    tenantId: user!.tenantId,
+                    studentId: student.id,
+                    amount: prevDue,
+                    dueDate: admDate,
+                    status: 'PENDING',
+                    notes: 'Previous Year Due (पिछले वर्ष की बकाया फीस)'
+                }
+            })
+        }
+
+        // Create 6 Fee installments (blank slots as requested by user)
         for (let i = 0; i < 6; i++) {
             const dueDate = new Date(admDate)
             dueDate.setMonth(dueDate.getMonth() + i)
@@ -336,7 +358,7 @@ export async function PATCH(req: NextRequest) {
         const body = await req.json()
         const { 
             id, fullName, phone, courseId, batchId, status, fatherName, motherName, parentPhone, email, 
-            totalFee, admissionDate, notes, scholarNo, dob, dobInWords, gender, caste, medium, 
+            totalFee, previousDueFee, admissionDate, notes, scholarNo, dob, dobInWords, gender, caste, medium, 
             aadhaarNo, samagraId, penId, aparId, bankName, bankAccountNo, ifsc, subjectGroup, photo
         } = body
 
@@ -374,37 +396,111 @@ export async function PATCH(req: NextRequest) {
             }
         }
 
-        const student = await prisma.student.update({
-            where: { id, tenantId: user!.tenantId },
-            data: {
-                fullName,
-                phone,
-                courseId,
-                batchId,
-                status: status as any,
-                fatherName,
-                motherName,
-                parentPhone,
-                email,
-                totalFee: totalFee !== undefined ? parseFloat(totalFee) : undefined,
-                admissionDate: admissionDate ? new Date(admissionDate) : undefined,
-                notes,
-                scholarNo: scholarNo !== undefined ? scholarNo : undefined,
-                dob: dob ? new Date(dob) : undefined,
-                dobInWords: dobInWords !== undefined ? dobInWords : undefined,
-                gender: gender as any,
-                caste: caste !== undefined ? caste : undefined,
-                medium: medium !== undefined ? medium : undefined,
-                aadhaarNo: aadhaarNo !== undefined ? aadhaarNo : undefined,
-                samagraId: samagraId !== undefined ? samagraId : undefined,
-                penId: penId !== undefined ? penId : undefined,
-                aparId: aparId !== undefined ? aparId : undefined,
-                bankName: bankName !== undefined ? bankName : undefined,
-                bankAccountNo: bankAccountNo !== undefined ? bankAccountNo : undefined,
-                ifsc: ifsc !== undefined ? ifsc : undefined,
-                subjectGroup: subjectGroup !== undefined ? subjectGroup : undefined,
-                photo: photo !== undefined ? photo : undefined,
+        // Use transaction to handle previousDueFee updates atomically
+        const student = await prisma.$transaction(async (tx) => {
+            // Fetch existing student data
+            const existingStudent = await tx.student.findUnique({
+                where: { id, tenantId: user!.tenantId }
+            })
+            if (!existingStudent) throw new Error('Student not found')
+
+            const oldPrevDue = existingStudent.previousDueFee || 0
+            const newPrevDue = previousDueFee !== undefined ? (parseFloat(previousDueFee) || 0) : oldPrevDue
+            const prevDueDelta = newPrevDue - oldPrevDue
+
+            // Calculate new total fee
+            let newTotalFee: number | undefined
+            if (totalFee !== undefined) {
+                // If totalFee is explicitly provided from edit form, use it as the final total fee
+                newTotalFee = parseFloat(totalFee) || 0
+            } else if (prevDueDelta !== 0) {
+                // Only previous due changed without totalFee specified — adjust totalFee by the delta
+                newTotalFee = (existingStudent.totalFee || 0) + prevDueDelta
             }
+
+            // Update student record
+            const updatedStudent = await tx.student.update({
+                where: { id, tenantId: user!.tenantId },
+                data: {
+                    fullName,
+                    phone,
+                    courseId,
+                    batchId,
+                    status: status as any,
+                    fatherName,
+                    motherName,
+                    parentPhone,
+                    email,
+                    previousDueFee: newPrevDue,
+                    totalFee: newTotalFee !== undefined ? newTotalFee : undefined,
+                    admissionDate: admissionDate ? new Date(admissionDate) : undefined,
+                    notes,
+                    scholarNo: scholarNo !== undefined ? scholarNo : undefined,
+                    dob: dob ? new Date(dob) : undefined,
+                    dobInWords: dobInWords !== undefined ? dobInWords : undefined,
+                    gender: gender as any,
+                    caste: caste !== undefined ? caste : undefined,
+                    medium: medium !== undefined ? medium : undefined,
+                    aadhaarNo: aadhaarNo !== undefined ? aadhaarNo : undefined,
+                    samagraId: samagraId !== undefined ? samagraId : undefined,
+                    penId: penId !== undefined ? penId : undefined,
+                    aparId: aparId !== undefined ? aparId : undefined,
+                    bankName: bankName !== undefined ? bankName : undefined,
+                    bankAccountNo: bankAccountNo !== undefined ? bankAccountNo : undefined,
+                    ifsc: ifsc !== undefined ? ifsc : undefined,
+                    subjectGroup: subjectGroup !== undefined ? subjectGroup : undefined,
+                    photo: photo !== undefined ? photo : undefined,
+                }
+            })
+
+            // Handle Previous Due Fee record in fees table
+            if (previousDueFee !== undefined) {
+                // Find existing "Previous Year Due" fee record for this student
+                const existingPrevDueFee = await tx.fee.findFirst({
+                    where: {
+                        tenantId: user!.tenantId,
+                        studentId: id,
+                        notes: { contains: 'Previous Year Due' }
+                    }
+                })
+
+                if (newPrevDue > 0) {
+                    if (existingPrevDueFee) {
+                        // Update existing previous due fee record
+                        await tx.fee.update({
+                            where: { id: existingPrevDueFee.id },
+                            data: {
+                                amount: newPrevDue,
+                                status: existingPrevDueFee.paidDate ? 'PAID' : 'PENDING',
+                            }
+                        })
+                    } else {
+                        // Create new previous year due fee record
+                        const admDate = existingStudent.admissionDate || new Date()
+                        await tx.fee.create({
+                            data: {
+                                tenantId: user!.tenantId,
+                                studentId: id,
+                                amount: newPrevDue,
+                                dueDate: admDate,
+                                status: 'PENDING',
+                                notes: 'Previous Year Due (पिछले वर्ष की बकाया फीस)'
+                            }
+                        })
+                    }
+                } else if (newPrevDue === 0 && existingPrevDueFee) {
+                    // Previous due was cleared — check if it was paid
+                    if (!existingPrevDueFee.paidDate) {
+                        // Not paid, set amount to 0 and keep as pending (don't delete paid records)
+                        await tx.fee.update({
+                            where: { id: existingPrevDueFee.id },
+                            data: { amount: 0, status: 'PENDING' }
+                        })
+                    }
+                }
+            }
+
+            return updatedStudent
         })
 
         return NextResponse.json({ success: true, data: student })
