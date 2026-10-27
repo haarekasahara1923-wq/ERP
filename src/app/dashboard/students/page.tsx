@@ -1186,6 +1186,84 @@ export default function StudentsPage() {
                                         <label className="label" style={{ color: 'var(--primary)', fontWeight: '700' }}>🪪 Scholar No. (Editable)</label>
                                         <input className="input" value={editForm.scholarNo || ''} onChange={e => setEditForm({...editForm, scholarNo: e.target.value})} placeholder="Enter scholar number" />
                                     </div>
+
+                                    {/* ── Fee Details & Previous Year Due Section (TOP OF EDIT FORM) ── */}
+                                    <div style={{ gridColumn: '1 / -1', padding: '16px', background: 'linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.02))', borderRadius: '12px', border: '1px solid rgba(245,158,11,0.35)', marginBottom: '4px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                                            <div style={{ fontSize: '14px', fontWeight: '800', color: '#f59e0b', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                                <span>💰</span> Fee Details & Previous Year Due (फीस एवं पिछला बकाया शुल्क)
+                                            </div>
+                                            <span style={{ fontSize: '11px', color: '#f59e0b', background: 'rgba(245,158,11,0.15)', padding: '2px 8px', borderRadius: '10px', fontWeight: '700' }}>
+                                                Auto-Adding to Total Fee
+                                            </span>
+                                        </div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px' }}>
+                                            <div>
+                                                <label className="label" style={{ fontWeight: '600' }}>
+                                                    Current Year Fee (चालू वर्ष की फीस)
+                                                </label>
+                                                <input 
+                                                    type="number" 
+                                                    className="input" 
+                                                    placeholder="0"
+                                                    value={editForm.totalFee !== undefined ? Math.max(0, (parseFloat(editForm.totalFee) || 0) - (parseFloat(editForm.previousDueFee) || 0)) : ''} 
+                                                    onChange={e => {
+                                                        const currentYearFee = parseFloat(e.target.value) || 0
+                                                        const prevDue = parseFloat(editForm.previousDueFee) || 0
+                                                        setEditForm({ ...editForm, totalFee: (currentYearFee + prevDue).toString() })
+                                                    }} 
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="label" style={{ color: '#f59e0b', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                    ⏮️ Previous Year Due Fee (पिछले वर्ष की बकाया फीस)
+                                                </label>
+                                                <input 
+                                                    type="number" 
+                                                    className="input" 
+                                                    placeholder="0"
+                                                    value={editForm.previousDueFee ?? ''} 
+                                                    onChange={e => {
+                                                        const prevDueStr = e.target.value
+                                                        const prevDue = parseFloat(prevDueStr) || 0
+                                                        const oldPrevDue = parseFloat(editForm.previousDueFee) || 0
+                                                        const currentYearFee = Math.max(0, (parseFloat(editForm.totalFee) || 0) - oldPrevDue)
+                                                        setEditForm({ ...editForm, previousDueFee: prevDueStr, totalFee: (currentYearFee + prevDue).toString() })
+                                                    }}
+                                                    style={{ borderColor: '#f59e0b', background: 'rgba(245,158,11,0.08)', fontWeight: '700' }}
+                                                />
+                                            </div>
+
+                                            <div>
+                                                <label className="label" style={{ color: 'var(--primary)', fontWeight: '800' }}>
+                                                    Total Student Fee (कुल फीस = चालू वर्ष + पिछला बकाया)
+                                                </label>
+                                                <input 
+                                                    type="number" 
+                                                    className="input" 
+                                                    value={editForm.totalFee ?? ''} 
+                                                    onChange={e => {
+                                                        setEditForm({ ...editForm, totalFee: e.target.value })
+                                                    }}
+                                                    style={{ fontWeight: '800', borderColor: 'var(--primary)', background: 'rgba(99,102,241,0.06)' }}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(245,158,11,0.1)', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', fontSize: '12px' }}>
+                                            <span style={{ color: 'var(--text-muted)' }}>
+                                                📅 चालू वर्ष फीस: <strong style={{ color: 'var(--text-primary)' }}>₹{Math.max(0, (parseFloat(editForm.totalFee) || 0) - (parseFloat(editForm.previousDueFee) || 0)).toLocaleString('en-IN')}</strong>
+                                            </span>
+                                            <span style={{ color: '#f59e0b' }}>
+                                                ⏮️ पिछला बकाया: <strong>₹{(parseFloat(editForm.previousDueFee) || 0).toLocaleString('en-IN')}</strong>
+                                            </span>
+                                            <span style={{ color: 'var(--primary)', fontWeight: '800', marginLeft: 'auto' }}>
+                                                ✅ कुल देय फीस: ₹{(parseFloat(editForm.totalFee) || 0).toLocaleString('en-IN')}
+                                            </span>
+                                        </div>
+                                    </div>
+
                                     <div><label className="label">Full Name</label><input className="input" value={editForm.fullName || ''} onChange={e => setEditForm({...editForm, fullName: e.target.value})} /></div>
                                     <div><label className="label">Phone</label><input className="input" value={editForm.phone || ''} onChange={e => setEditForm({...editForm, phone: e.target.value})} /></div>
                                     <div><label className="label">Parent Phone</label><input className="input" value={editForm.parentPhone || ''} onChange={e => setEditForm({...editForm, parentPhone: e.target.value})} /></div>
@@ -1222,77 +1300,6 @@ export default function StudentsPage() {
                                     <div><label className="label">Samagra ID</label><input className="input" value={editForm.samagraId || ''} onChange={e => setEditForm({...editForm, samagraId: e.target.value})} /></div>
                                     <div><label className="label">PEN ID</label><input className="input" value={editForm.penId || ''} onChange={e => setEditForm({...editForm, penId: e.target.value})} /></div>
                                     <div><label className="label">APAR ID</label><input className="input" value={editForm.aparId || ''} onChange={e => setEditForm({...editForm, aparId: e.target.value})} /></div>
-                                    {/* Fee Structure Section */}
-                                    <div style={{ gridColumn: '1 / -1', padding: '16px', background: 'var(--surface-2, rgba(255,255,255,0.03))', borderRadius: '12px', border: '1px solid var(--border)', marginBottom: '8px' }}>
-                                        <div style={{ fontSize: '13px', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '12px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                                            <span>💰</span> Student Fee Details & Previous Year Due (फीस विवरण)
-                                        </div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }}>
-                                            <div>
-                                                <label className="label" style={{ fontWeight: '600' }}>
-                                                    Current Year Fee (चालू वर्ष की फीस)
-                                                </label>
-                                                <input 
-                                                    type="number" 
-                                                    className="input" 
-                                                    placeholder="0"
-                                                    value={editForm.totalFee !== undefined ? Math.max(0, (parseFloat(editForm.totalFee) || 0) - (parseFloat(editForm.previousDueFee) || 0)) : ''} 
-                                                    onChange={e => {
-                                                        const currentYearFee = parseFloat(e.target.value) || 0
-                                                        const prevDue = parseFloat(editForm.previousDueFee) || 0
-                                                        setEditForm({ ...editForm, totalFee: (currentYearFee + prevDue).toString() })
-                                                    }} 
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="label" style={{ color: '#f59e0b', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                                    ⏮️ Previous Year Due Fee (पिछले वर्ष की बकाया फीस)
-                                                </label>
-                                                <input 
-                                                    type="number" 
-                                                    className="input" 
-                                                    placeholder="0"
-                                                    value={editForm.previousDueFee ?? ''} 
-                                                    onChange={e => {
-                                                        const prevDueStr = e.target.value
-                                                        const prevDue = parseFloat(prevDueStr) || 0
-                                                        const oldPrevDue = parseFloat(editForm.previousDueFee) || 0
-                                                        const currentYearFee = Math.max(0, (parseFloat(editForm.totalFee) || 0) - oldPrevDue)
-                                                        setEditForm({ ...editForm, previousDueFee: prevDueStr, totalFee: (currentYearFee + prevDue).toString() })
-                                                    }}
-                                                    style={{ borderColor: (parseFloat(editForm.previousDueFee) || 0) > 0 ? '#f59e0b' : undefined, background: (parseFloat(editForm.previousDueFee) || 0) > 0 ? 'rgba(245,158,11,0.06)' : undefined }}
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <label className="label" style={{ color: 'var(--primary)', fontWeight: '800' }}>
-                                                    Total Student Fee (कुल फीस = चालू वर्ष + पिछला बकाया)
-                                                </label>
-                                                <input 
-                                                    type="number" 
-                                                    className="input" 
-                                                    value={editForm.totalFee ?? ''} 
-                                                    onChange={e => {
-                                                        setEditForm({ ...editForm, totalFee: e.target.value })
-                                                    }}
-                                                    style={{ fontWeight: '800', borderColor: 'var(--primary)', background: 'rgba(99,102,241,0.06)' }}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div style={{ marginTop: '12px', padding: '10px 14px', background: 'rgba(245,158,11,0.08)', borderRadius: '8px', border: '1px solid rgba(245,158,11,0.25)', display: 'flex', gap: '16px', flexWrap: 'wrap', alignItems: 'center', fontSize: '12px' }}>
-                                            <span style={{ color: 'var(--text-muted)' }}>
-                                                📅 चालू वर्ष फीस: <strong style={{ color: 'var(--text-primary)' }}>₹{Math.max(0, (parseFloat(editForm.totalFee) || 0) - (parseFloat(editForm.previousDueFee) || 0)).toLocaleString('en-IN')}</strong>
-                                            </span>
-                                            <span style={{ color: '#f59e0b' }}>
-                                                ⏮️ पिछला बकाया: <strong>₹{(parseFloat(editForm.previousDueFee) || 0).toLocaleString('en-IN')}</strong>
-                                            </span>
-                                            <span style={{ color: 'var(--primary)', fontWeight: '800', marginLeft: 'auto' }}>
-                                                ✅ कुल देय फीस: ₹{(parseFloat(editForm.totalFee) || 0).toLocaleString('en-IN')}
-                                            </span>
-                                        </div>
-                                    </div>
                                     <div>
                                         <label className="label">Status</label>
                                         <select className="input" value={editForm.status || 'ACTIVE'} onChange={e => setEditForm({...editForm, status: e.target.value})}>
@@ -1373,6 +1380,8 @@ export default function StudentsPage() {
                                         ['📚 Class', selectedStudent.courseName],
                                         ['🕐 Section', selectedStudent.batchName],
                                         ['💰 Total Fee', formatCurrency(selectedStudent.totalFee)],
+                                        ['⏮️ Prev Due Fee', formatCurrency(selectedStudent.previousDueFee || 0)],
+                                        ['📅 Current Year Fee', formatCurrency(Math.max(0, selectedStudent.totalFee - (selectedStudent.previousDueFee || 0)))],
                                         ['✅ Paid', formatCurrency(selectedStudent.paidFee)],
                                         ['⚠️ Pending', formatCurrency(selectedStudent.totalFee - selectedStudent.paidFee)],
                                         ['📅 Admission', selectedStudent.admissionDate ? formatDate(selectedStudent.admissionDate) : 'N/A'],
