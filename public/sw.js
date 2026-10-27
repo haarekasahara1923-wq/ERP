@@ -1,19 +1,19 @@
 // Scalevo ERP - Service Worker
 // Handles: caching, offline support, push notifications, background sync
 
-const CACHE_NAME = 'scalevo-v4';
-const STATIC_CACHE = 'scalevo-static-v4';
-const API_CACHE = 'scalevo-api-v4';
+const CACHE_NAME = 'scalevo-v6';
+const STATIC_CACHE = 'scalevo-static-v6';
+const API_CACHE = 'scalevo-api-v6';
 
 // Assets to pre-cache on install
 const PRECACHE_ASSETS = [
   '/',
   '/login',
   '/dashboard',
-  '/manifest.json?v=3',
-  '/favicon.ico?v=3',
-  '/icons/icon-192x192.png?v=3',
-  '/icons/icon-512x512.png?v=3',
+  '/manifest.json?v=4',
+  '/favicon.ico?v=4',
+  '/icons/icon-192x192.png?v=4',
+  '/icons/icon-512x512.png?v=4',
   '/icons/icon-192x192.png',
   '/icons/icon-512x512.png',
 ];
@@ -26,22 +26,30 @@ const API_ROUTES = [
   '/api/batches',
 ];
 
+// ─── Message Handling ───────────────────────────────────────────────────────
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
+
 // ─── Install ───────────────────────────────────────────────────────────────
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing Scalevo Service Worker v4...');
+  console.log('[SW] Installing Scalevo Service Worker v6...');
+  self.skipWaiting();
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
       console.log('[SW] Pre-caching static assets');
       return cache.addAll(PRECACHE_ASSETS).catch((err) => {
         console.warn('[SW] Pre-cache failed for some assets:', err);
       });
-    }).then(() => self.skipWaiting())
+    })
   );
 });
 
 // ─── Activate ──────────────────────────────────────────────────────────────
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating Scalevo Service Worker v4...');
+  console.log('[SW] Activating Scalevo Service Worker v6...');
   event.waitUntil(
     caches.keys().then((keys) => {
       return Promise.all(
@@ -88,7 +96,17 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Pages & static assets: Cache-first, fallback to network
+  // Navigation / Document / HTML requests: ALWAYS Network-first so any page or UI updates show up immediately
+  if (
+    request.mode === 'navigate' || 
+    request.destination === 'document' || 
+    (request.headers.get('accept') && request.headers.get('accept').includes('text/html'))
+  ) {
+    event.respondWith(networkFirst(request, STATIC_CACHE));
+    return;
+  }
+
+  // Pure static assets (images, icons, etc.): Cache-first, fallback to network
   event.respondWith(cacheFirst(request, STATIC_CACHE));
 });
 
